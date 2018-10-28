@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE xml [
+<!ELEMENT xml (Thread*)>
+<!ATTLIST xml 
+version CDATA #REQUIRED
+>
+<!ELEMENT Thread (RelQuestion, RelComment*)>
+<!ATTLIST Thread
+ THREAD_SEQUENCE CDATA #REQUIRED
+>
+<!ELEMENT RelQuestion (RelQSubject, RelQBody)>
+<!ATTLIST RelQuestion
+RELQ_ID CDATA #REQUIRED
+RELQ_CATEGORY CDATA #REQUIRED
+RELQ_DATE CDATA #REQUIRED
+RELQ_USERID CDATA #REQUIRED
+RELQ_USERNAME CDATA #REQUIRED
+>
+<!ELEMENT RelQSubject (#PCDATA)>
+<!ELEMENT RelQBody (#PCDATA)>
+<!ELEMENT RelComment (RelCText)>
+<!ATTLIST RelComment
+RELC_ID CDATA #REQUIRED
+RELC_DATE CDATA #REQUIRED
+RELC_USERID CDATA #REQUIRED
+RELC_USERNAME CDATA #REQUIRED
+RELC_RELEVANCE2RELQ CDATA #REQUIRED
+>
+<!ELEMENT RelCText (#PCDATA)>
+]>
+<xml version="1.0">
+
+	<Thread THREAD_SEQUENCE="Q2482">
+		<RelQuestion RELQ_ID="Q2482" RELQ_CATEGORY="Socialising" RELQ_DATE="2010-01-17 15:26:30" RELQ_USERID="U1295" RELQ_USERNAME="Jester">
+			<RelQSubject>Tennis competitions</RelQSubject>
+			<RelQBody>Hi; Would anyone know of any organised tennis competitions in Doha? Many Thanks Jessica</RelQBody>
+		</RelQuestion>
+		<RelComment RELC_ID="Q2482_C1" RELC_DATE="2010-01-17 15:50:27" RELC_USERID="U2406" RELC_USERNAME="crecth" RELC_RELEVANCE2RELQ="PotentiallyUseful">
+			<RelCText>try badminton.. you will see the difference..</RelCText>
+		</RelComment>
+		<RelComment RELC_ID="Q2482_C2" RELC_DATE="2010-01-17 17:36:24" RELC_USERID="U5547" RELC_USERNAME="qatari" RELC_RELEVANCE2RELQ="Bad">
+			<RelCText>hi heart..how r u doing today?</RelCText>
+		</RelComment>
+	</Thread>
+
+    <OrgQuestion ORGQ_ID="Q268">
+        <OrgQSubject>Good Bank</OrgQSubject>
+        <OrgQBody>Which is a good bank as per your experience in Doha</OrgQBody>
+
+        <Thread THREAD_SEQUENCE="Q268_R4" SubtaskA_Skip_Because_Same_As_RelQuestion_ID="Q246_R15">
+            <RelQuestion RELQ_ID="Q268_R4" RELQ_RANKING_ORDER="4" RELQ_CATEGORY="Advice and Help" RELQ_DATE="2013-05-02 19:43:00" RELQ_USERID="U4882" RELQ_USERNAME="ankukuma" RELQ_RELEVANCE2ORGQ="PerfectMatch">
+                <RelQSubject>Best Bank</RelQSubject>
+                <RelQBody>Hi Guys; I need to open a new bank accoount. Which is the best bank in Qatar ? I assume all of them will roughly be the same; but stll which has a slight edge (Money transfer; benifits etc) Thanks !!!</RelQBody>
+            </RelQuestion>
+
+            <RelComment RELC_ID="Q268_R4_C1" RELC_DATE="2013-05-03 07:23:20" RELC_USERID="U594" RELC_USERNAME="Dilgeer" RELC_RELEVANCE2ORGQ="Good" RELC_RELEVANCE2RELQ="Good">
+                <RelCText>Commercial bank/IBQ</RelCText>
+            </RelComment>
+
+            <RelComment RELC_ID="Q268_R4_C2" RELC_DATE="2013-05-03 12:58:13" RELC_USERID="U979" RELC_USERNAME="Speedysid" RELC_RELEVANCE2ORGQ="Good" RELC_RELEVANCE2RELQ="Good">
+                <RelCText>The best bank in Qatar for you would be the one that fits in your requirements.I suggest you visit the major banks here; and approach the Customer Relations person there to guide you with the facilities the bank offers. They include: -Current Accounts facilities -Savings Account facilities - Money Transfer (However; I highly recommend using the bank transfer only in emergency cases. There are money transfer agents which offer better exchange rates; and lower service fees) - Tie-ups with any bank in your home country to ease transfers</RelCText>
+            </RelComment>
+
+         </Thread>
+    </OrgQuestion>
+
+    <OrgQuestion ORGQ_ID="Q268">
+        <OrgQSubject>Good Bank</OrgQSubject>
+        <OrgQBody>Which is a good bank as per your experience in Doha</OrgQBody>
+
+        <Thread THREAD_SEQUENCE="Q268_R5" SubtaskA_Skip_Because_Same_As_RelQuestion_ID="Q246_R13">
+            <RelQuestion RELQ_ID="Q268_R5" RELQ_RANKING_ORDER="5" RELQ_CATEGORY="Advice and Help" RELQ_DATE="2013-12-31 10:19:32" RELQ_USERID="U4880" RELQ_USERNAME="9chimera11" RELQ_RELEVANCE2ORGQ="PerfectMatch">
+                <RelQSubject>What is the best bank to open an account?</RelQSubject>
+                <RelQBody>Seems like all the banks need the salary to be credited to their accounts [where I came from that was not a necessity]. So it sort of limits my choices. Can anyone recommend me a bank that has good interest rates on loans and credit cards? So far I'm considering Doha Bank because of the Lulu card. Is it worth it? :)</RelQBody>
+            </RelQuestion>
+
+            <RelComment RELC_ID="Q268_R5_C1" RELC_DATE="2013-12-31 10:33:24" RELC_USERID="U4328" RELC_USERNAME="Paj" RELC_RELEVANCE2ORGQ="Good" RELC_RELEVANCE2RELQ="Good">
+                <RelCText>IBQ... if your salary is 25k above you will have a banking officer that will take care of your needs...</RelCText>
+            </RelComment>
+
+            <RelComment RELC_ID="Q268_R5_C2" RELC_DATE="2013-12-31 10:33:43" RELC_USERID="U3617" RELC_USERNAME="coxtown" RELC_RELEVANCE2ORGQ="Bad" RELC_RELEVANCE2RELQ="Good">
+                <RelCText>West bank ????</RelCText>
+            </RelComment>
+
+       </Thread>
+    </OrgQuestion>
+
+    <OrgQuestion ORGQ_ID="Q269">
+        <OrgQSubject>What is the best place now in Qatar?</OrgQSubject>
+        <OrgQBody>What is the best place now in Qatar to spend the Eid holidays</OrgQBody>
+
+        <Thread THREAD_SEQUENCE="Q269_R7">
+            <RelQuestion RELQ_ID="Q269_R7" RELQ_RANKING_ORDER="7" RELQ_CATEGORY="Family Life in Qatar" RELQ_DATE="2008-11-04 08:31:13" RELQ_USERID="U5157" RELQ_USERNAME="whaggagy" RELQ_RELEVANCE2ORGQ="Relevant">
+                <RelQSubject>what is the best beach place for camping ?</RelQSubject>
+                <RelQBody>Hi what is the best beach place for camping and swimming for my family ? someone say to me in the north (front of Ghoria ) ! Need quiet place :)</RelQBody>
+            </RelQuestion>
+
+            <RelComment RELC_ID="Q269_R7_C1" RELC_DATE="2008-11-04 08:48:10" RELC_USERID="U51" RELC_USERNAME="baldrick2dogs" RELC_RELEVANCE2ORGQ="Good" RELC_RELEVANCE2RELQ="Good">
+                <RelCText>Bir Zekreet. Just make sure to take all your crap with you when you've finished. Leave only footprints! Did you Google it first?</RelCText>
+            </RelComment>
+
+            <RelComment RELC_ID="Q269_R7_C2" RELC_DATE="2008-11-04 08:53:22" RELC_USERID="U348" RELC_USERNAME="who.am.i" RELC_RELEVANCE2ORGQ="Good" RELC_RELEVANCE2RELQ="Good">
+                <RelCText>in Al Khor :D the beach near the QG/rasgas accomodation.. lol. :D cheers; paul</RelCText>
+            </RelComment>
+        </Thread>
+    </OrgQuestion>
+</xml>

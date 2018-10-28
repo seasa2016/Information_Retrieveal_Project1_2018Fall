@@ -1,0 +1,115 @@
+{
+    "Q268": {
+        "ID": "Q268",
+        "Subject": "Good Bank",
+        "Body": "Which is a good bank as per your experience in Doha",
+        "Thread": [
+            {
+                "RelQuestion": {
+                    "ID": "Q268_R4",
+                    "ORDER": "4",
+                    "CATEGORY": "Advice and Help",
+                    "DATE": "2013-05-02 19:43:00",
+                    "USERID": "U4882",
+                    "USERNAME": "ankukuma",
+                    "RELEVANCE2ORGQ": "PerfectMatch",
+                    "Subject": "Best Bank",
+                    "Body": "Hi Guys; I need to open a new bank accoount. Which is the best bank in Qatar ? I assume all of them will roughly be the same; but stll which has a slight edge (Money transfer; benifits etc) Thanks !!!"
+                },
+                "Comment": [
+                    {
+                        "ID": "Q268_R4_C1",
+                        "DATE": "2013-05-03 07:23:20",
+                        "USERID": "U594",
+                        "USERNAME": "Dilgeer",
+                        "RELEVANCE2ORGQ": "Good",
+                        "RELEVANCE2RELQ": "Good",
+                        "Text": "Commercial bank/IBQ"
+                    },
+                    {
+                        "ID": "Q268_R4_C2",
+                        "DATE": "2013-05-03 12:58:13",
+                        "USERID": "U979",
+                        "USERNAME": "Speedysid",
+                        "RELEVANCE2ORGQ": "Good",
+                        "RELEVANCE2RELQ": "Good",
+                        "Text": "The best bank in Qatar for you would be the one that fits in your requirements.I suggest you visit the major banks here; and approach the Customer Relations person there to guide you with the facilities the bank offers. They include: -Current Accounts facilities -Savings Account facilities - Money Transfer (However; I highly recommend using the bank transfer only in emergency cases. There are money transfer agents which offer better exchange rates; and lower service fees) - Tie-ups with any bank in your home country to ease transfers"
+                    }
+                ]
+            },
+            {
+                "RelQuestion": {
+                    "ID": "Q268_R5",
+                    "ORDER": "5",
+                    "CATEGORY": "Advice and Help",
+                    "DATE": "2013-12-31 10:19:32",
+                    "USERID": "U4880",
+                    "USERNAME": "9chimera11",
+                    "RELEVANCE2ORGQ": "PerfectMatch",
+                    "Subject": "What is the best bank to open an account?",
+                    "Body": "Seems like all the banks need the salary to be credited to their accounts [where I came from that was not a necessity]. So it sort of limits my choices. Can anyone recommend me a bank that has good interest rates on loans and credit cards? So far I'm considering Doha Bank because of the Lulu card. Is it worth it? :)"
+                },
+                "Comment": [
+                    {
+                        "ID": "Q268_R5_C1",
+                        "DATE": "2013-12-31 10:33:24",
+                        "USERID": "U4328",
+                        "USERNAME": "Paj",
+                        "RELEVANCE2ORGQ": "Good",
+                        "RELEVANCE2RELQ": "Good",
+                        "Text": "IBQ... if your salary is 25k above you will have a banking officer that will take care of your needs..."
+                    },
+                    {
+                        "ID": "Q268_R5_C2",
+                        "DATE": "2013-12-31 10:33:43",
+                        "USERID": "U3617",
+                        "USERNAME": "coxtown",
+                        "RELEVANCE2ORGQ": "Bad",
+                        "RELEVANCE2RELQ": "Good",
+                        "Text": "West bank ????"
+                    }
+                ]
+            }
+        ]
+    },
+    "Q269": {
+        "ID": "Q269",
+        "Subject": "What is the best place now in Qatar?",
+        "Body": "What is the best place now in Qatar to spend the Eid holidays",
+        "Thread": [
+            {
+                "RelQuestion": {
+                    "ID": "Q269_R7",
+                    "ORDER": "7",
+                    "CATEGORY": "Family Life in Qatar",
+                    "DATE": "2008-11-04 08:31:13",
+                    "USERID": "U5157",
+                    "USERNAME": "whaggagy",
+                    "RELEVANCE2ORGQ": "Relevant",
+                    "Subject": "what is the best beach place for camping ?",
+                    "Body": "Hi what is the best beach place for camping and swimming for my family ? someone say to me in the north (front of Ghoria ) ! Need quiet place :)"
+                },
+                "Comment": [
+                    {
+                        "ID": "Q269_R7_C1",
+                        "DATE": "2008-11-04 08:48:10",
+                        "USERID": "U51",
+                        "USERNAME": "baldrick2dogs",
+                        "RELEVANCE2ORGQ": "Good",
+                        "RELEVANCE2RELQ": "Good",
+                        "Text": "Bir Zekreet. Just make sure to take all your crap with you when you've finished. Leave only footprints! Did you Google it first?"
+                    },
+                    {
+                        "ID": "Q269_R7_C2",
+                        "DATE": "2008-11-04 08:53:22",
+                        "USERID": "U348",
+                        "USERNAME": "who.am.i",
+                        "RELEVANCE2ORGQ": "Good",
+                        "RELEVANCE2RELQ": "Good",
+                        "Text": "in Al Khor :D the beach near the QG/rasgas accomodation.. lol. :D cheers; paul"
+                    }
+                ]
+            }
+        ]
+    }
+}
