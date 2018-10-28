@@ -49,7 +49,7 @@ class parser:
             root = tree.getroot()
             out = self.convert(root)[1]
             self.deal(out,task)
-        with open(task,'w') as f:
+        with open('p','w') as f:
             json.dump(self.data,f,indent=4)
         
     def deal(self,out,task='taskA'):
@@ -88,7 +88,11 @@ class parser:
             if('Thread' in out):
                 for temp in out['Thread']:
                     temp_rp = {name:temp["RelQuestion"][name] for name in ["ID","CATEGORY","DATE","USERID","USERNAME","Subject","Body"]}
-                    temp_rp['Comment'] = temp["Comment"]
+                    try:
+                        temp_rp['Comment'] = temp["Comment"]
+                    except KeyError:
+                        continue
+
                     try:
                         self.data[temp_rp['ID']]['Comment'].extend(temp_rp['Comment'])
                     except KeyError:
