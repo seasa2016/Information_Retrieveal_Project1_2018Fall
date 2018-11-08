@@ -109,23 +109,23 @@ class Quora():
         return [[self.characterized_words[w] for w in words] for words in batch]
 
 class SemEval():
-    def __init__(self, args):
+    def __init__(self, args,task='taskA'):
         self.RAW = data.RawField()
         self.TEXT = data.Field(batch_first=True)
         self.LABEL = data.Field(sequential=False, unk_token=None)
 
         self.train, self.dev, self.test = data.TabularDataset.splits(
-            path='.data/semeval',
-            train='train.tsv',
-            validation='dev.tsv',
-            test='test.tsv',
+            path='data/semeval',
+            train= task+'_train',
+            validation=task+'_dev',
+            test=task+'_test',
             format='tsv',
             fields=[('label', self.LABEL),
                     ('q1', self.TEXT),
                     ('q2', self.TEXT),
                     ('id', self.RAW)])
 
-        self.TEXT.build_vocab(self.train, self.dev, self.test, vectors=GloVe(name='128B', dim=128))
+        self.TEXT.build_vocab(self.train, self.dev, self.test, vectors=GloVe(name='42B', dim=300))
         self.LABEL.build_vocab(self.train)
 
         sort_key = lambda x: data.interleave_keys(len(x.q1), len(x.q2))

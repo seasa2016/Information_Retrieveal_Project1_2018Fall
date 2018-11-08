@@ -2,6 +2,7 @@ import argparse
 
 import torch
 from torch import nn
+import  torch.nn.functional as f
 
 from model.BIMPM import BIMPM
 from model.utils import SNLI, Quora
@@ -13,7 +14,7 @@ def test(model, args, data, mode='test'):
     else:
         iterator = iter(data.test_iter)
 
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.BCELoss()
     model.eval()
     acc, loss, size = 0, 0, 0
 
@@ -38,13 +39,14 @@ def test(model, args, data, mode='test'):
             kwargs['char_h'] = char_h
 
         pred = model(**kwargs)
+        pred = torch.sigmoid(pred)
 
-        batch_loss = criterion(pred, batch.label)
+        batch_loss = criterion(pred, batch.label.view(pred.shape[0],-1).float())
         loss += batch_loss.item()
 
-        _, pred = pred.max(dim=1)
-        acc += (pred == batch.label).sum().float()
-        size += len(pred)
+
+        acc += (pred >= 0.5).sum().float()
+        size += pred.shape[0]
 
     acc /= size
     acc = acc.cpu().item()

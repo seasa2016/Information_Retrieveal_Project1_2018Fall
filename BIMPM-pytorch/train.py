@@ -8,7 +8,7 @@ from tensorboardX import SummaryWriter
 from time import gmtime, strftime
 
 from model.BIMPM import BIMPM
-from model.utils import SNLI, Quora
+from model.utils import SNLI, Quora,SemEval
 from test import test
 
 
@@ -19,7 +19,7 @@ def train(args, data):
 
     parameters = filter(lambda p: p.requires_grad, model.parameters())
     optimizer = optim.Adam(parameters, lr=args.learning_rate)
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.BCEWithLogitsLoss()
 
     writer = SummaryWriter(log_dir='runs/' + args.model_time)
 
@@ -65,13 +65,15 @@ def train(args, data):
 
         pred = model(**kwargs)
 
-        optimizer.zero_grad()
-        batch_loss = criterion(pred, batch.label)
+        if(i%3==0):
+            optimizer.zero_grad()
+        batch_loss = criterion(pred, batch.label.view(pred.shape[0],-1).float())
         loss += batch_loss.item()
         batch_loss.backward()
-        optimizer.step()
+        if(i%3==0):
+            optimizer.step()
 
-        if (i + 1) % args.print_freq == 0:
+        if i % args.print_freq == 0:
             dev_loss, dev_acc = test(model, args, data, mode='dev')
             test_loss, test_acc = test(model, args, data)
             c = (i + 1) // args.print_freq
@@ -101,19 +103,20 @@ def train(args, data):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch-size', default=64, type=int)
+    
+    parser.add_argument('--batch-size', default=8, type=int)
     parser.add_argument('--char-dim', default=20, type=int)
-    parser.add_argument('--char-hidden-size', default=50, type=int)
-    parser.add_argument('--data-type', default='Quora', help='available: SNLI or Quora')
+    parser.add_argument('--char-hidden-size', default=80, type=int)
+    parser.add_argument('--data-type', default='SemEval', help='available: SNLI or Quora')
     parser.add_argument('--dropout', default=0.1, type=float)
-    parser.add_argument('--epoch', default=10, type=int)
+    parser.add_argument('--epoch', default=20, type=int)
     parser.add_argument('--gpu', default=0, type=int)
     parser.add_argument('--hidden-size', default=100, type=int)
     parser.add_argument('--learning-rate', default=0.001, type=float)
-    parser.add_argument('--max-sent-len', default=-1, type=int,
+    parser.add_argument('--max-sent-len', default=40, type=int,
                         help='max length of input sentences model can accept, if -1, it accepts any length')
     parser.add_argument('--num-perspective', default=20, type=int)
-    parser.add_argument('--print-freq', default=500, type=int)
+    parser.add_argument('--print-freq', default=600, type=int)
     parser.add_argument('--use-char-emb', default=False, action='store_true')
     parser.add_argument('--word-dim', default=300, type=int)
     args = parser.parse_args()
@@ -124,12 +127,15 @@ def main():
     elif args.data_type == 'Quora':
         print('loading Quora data...')
         data = Quora(args)
+    elif args.data_type == 'SemEval':
+        print('loading SemEval data...')
+        data = SemEval(args)
     else:
         raise NotImplementedError('only SNLI or Quora data is possible')
 
     setattr(args, 'char_vocab_size', len(data.char_vocab))
     setattr(args, 'word_vocab_size', len(data.TEXT.vocab))
-    setattr(args, 'class_size', len(data.LABEL.vocab))
+    setattr(args, 'class_size',1)
     setattr(args, 'max_word_len', data.max_word_len)
     setattr(args, 'model_time', strftime('%H:%M:%S', gmtime()))
 

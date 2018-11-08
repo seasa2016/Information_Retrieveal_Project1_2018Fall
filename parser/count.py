@@ -83,7 +83,7 @@ for data in dataloader.iterator():
 			if(ques["ID"] in ID):
 				continue
 			ID.add(ques["ID"])
-
+			
 			num = len(remove(ques["Subject"]))
 			count(stat,num,"Subject")
 			num = len(remove(ques["Body"]))
