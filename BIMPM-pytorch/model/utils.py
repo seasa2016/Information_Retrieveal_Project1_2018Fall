@@ -116,9 +116,9 @@ class SemEval():
 
         self.train, self.dev, self.test = data.TabularDataset.splits(
             path='data/semeval',
-            train= task+'_train',
-            validation=task+'_dev',
-            test=task+'_test',
+            train= task+'_train.in',
+            validation=task+'_dev.in',
+            test=task+'_test.in',
             format='tsv',
             fields=[('label', self.LABEL),
                     ('q1', self.TEXT),

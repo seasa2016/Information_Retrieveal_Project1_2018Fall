@@ -1,0 +1,9 @@
+*.tsv
+*.csv
+*.txt
+*.xml
+*.relevancy
+*.in
+*.json
+*.vocab
+*.pyc
