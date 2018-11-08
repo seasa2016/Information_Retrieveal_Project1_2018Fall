@@ -13,7 +13,7 @@ def remove(line):
 		return 
 	line = re.sub('['+string.punctuation+']', ' ', line)
 	line = re.sub('  ', ' ', line)
-	return line
+	return line.lower()
 
 def add(vocab,line):
 	if(line is None):
@@ -24,8 +24,8 @@ def add(vocab,line):
 		except KeyError:
 			vocab[word] = 1
 
-task = 'taskB'
-
+task = 'taskC'
+ID = set()
 
 vocab = {}
 datalist = [
@@ -41,17 +41,34 @@ dataloader = parser(datalist,task)
 
 
 for data in dataloader.iterator():
-	
+	if(data["ID"] in ID):
+		continue
+	ID.add(data["ID"])
+
 	add(vocab,remove(data["Subject"]))
 	add(vocab,remove(data["Body"]))
 	if("Comment" in data):
 		for comment in data["Comment"]:
+			if(comment["ID"] in ID):
+				continue
+			ID.add(comment["ID"])
+
 			add(vocab,remove(comment["Text"]))
 
-	if("RelQuestion" in data):
-		for comment in data["RelQuestion"]:
-			add(vocab,remove(comment["Subject"]))
-			add(vocab,remove(comment["Body"]))
+	elif("RelQuestion" in data):
+		for ques in data["RelQuestion"]:
+			if(ques["ID"] in ID):
+				continue
+			ID.add(ques["ID"])
+
+			add(vocab,remove(ques["Subject"]))
+			add(vocab,remove(ques["Body"]))
+	elif("Thread" in data):
+		for thread in data["Thread"]:
+			add(vocab,remove(thread["RelQuestion"]["Subject"]))
+			add(vocab,remove(thread["RelQuestion"]["Body"]))
+			for comment in thread["Comment"]:
+				add(vocab,remove(comment["Text"]))
 
 arr = [ (name,vocab[name]) for name in vocab]
 arr = sorted(arr,key=lambda x:x[1],reverse=True)

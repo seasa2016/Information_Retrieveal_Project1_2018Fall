@@ -52,8 +52,8 @@ class parser:
 			root = tree.getroot()
 			out = self.convert(root)[1]
 			self.deal(out,task)
-		with open(task,'w') as f:
-			json.dump(self.data,f,indent=4)
+		#with open(task,'w') as f:
+		#	json.dump(self.data,f,indent=4)
 		
 	def deal(self,out,task='taskA'):
 		"""
