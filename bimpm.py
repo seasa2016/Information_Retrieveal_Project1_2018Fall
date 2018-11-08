@@ -92,6 +92,6 @@ for dtype in ['train','dev','test']:
 				add(vocab,remove(thread["RelQuestion"]["Subject"]))
 				add(vocab,remove(thread["RelQuestion"]["Body"]))
 				for comment in thread["Comment"]:
-					add(vocab,remove(comment["Text"]))
+					add(vocab,remove(comment["Text"]))1
 		"""
 
