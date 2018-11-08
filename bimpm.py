@@ -8,14 +8,20 @@ import re
 import string
 from parser.parser import parser
 
+
+#for the bimpm we limit the length to be less than 200
 def remove(line):
 	if(line is None):
 		return '' 
 	line = re.sub('['+string.punctuation+']', ' ', line)
 	line = re.sub('  ', ' ', line)
+
+	l = len(line.strip().split())
+	if(l>200):
+		return None
 	return line.lower()
 
-task = 'taskB'
+task = 'taskA'
 ID = set()
 
 vocab = {}
@@ -40,7 +46,7 @@ datalist['test'] = [
 for dtype in ['train','dev','test']:
 	dataloader = parser(datalist[dtype],task)
 	
-	f = open("./bimpm/{0}_{1}".format(task,dtype),'w')
+	f = open("./BIMPM-pytorch/data/semeval/{0}_{1}.in".format(task,dtype),'w')
 	idx = 0
 
 	for data in dataloader.iterator():
@@ -60,6 +66,9 @@ for dtype in ['train','dev','test']:
 				elif(rel=='PotentiallyUseful'):
 					rel = 0
 
+				if(text == None):
+					continue
+
 				f.write('{0}\t{1}\t{2}\t{3}\n'.format(rel,title,text,idx))
 				idx += 1
 
@@ -77,11 +86,12 @@ for dtype in ['train','dev','test']:
 				
 				f.write('{0}\t{1}\t{2}\t{3}\n'.format(rel,title,text,idx))
 				idx += 1
-				
+		"""	
 		elif("Thread" in data):
 			for thread in data["Thread"]:
 				add(vocab,remove(thread["RelQuestion"]["Subject"]))
 				add(vocab,remove(thread["RelQuestion"]["Body"]))
 				for comment in thread["Comment"]:
 					add(vocab,remove(comment["Text"]))
+		"""
 

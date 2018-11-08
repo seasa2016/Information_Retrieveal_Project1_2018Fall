@@ -104,16 +104,16 @@ def train(args, data):
 def main():
     parser = argparse.ArgumentParser()
     
-    parser.add_argument('--batch-size', default=8, type=int)
+    parser.add_argument('--batch-size', default=32, type=int)
     parser.add_argument('--char-dim', default=20, type=int)
     parser.add_argument('--char-hidden-size', default=80, type=int)
     parser.add_argument('--data-type', default='SemEval', help='available: SNLI or Quora')
     parser.add_argument('--dropout', default=0.1, type=float)
-    parser.add_argument('--epoch', default=20, type=int)
+    parser.add_argument('--epoch', default=200, type=int)
     parser.add_argument('--gpu', default=0, type=int)
     parser.add_argument('--hidden-size', default=100, type=int)
     parser.add_argument('--learning-rate', default=0.001, type=float)
-    parser.add_argument('--max-sent-len', default=40, type=int,
+    parser.add_argument('--max-sent-len', default=200, type=int,
                         help='max length of input sentences model can accept, if -1, it accepts any length')
     parser.add_argument('--num-perspective', default=20, type=int)
     parser.add_argument('--print-freq', default=600, type=int)
