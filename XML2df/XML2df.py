@@ -8,6 +8,7 @@ import xml.etree.ElementTree as ET
 import pandas as pd
 import numpy as np
 
+
 class data_preprocessing:
     
     def __init__(self, file_list, task):
@@ -24,11 +25,13 @@ class data_preprocessing:
             Task_dict = {}
 
             RELQ_ID = []
+            RelQSubject = []
             RelQBody = []
             RELC_IDs = []
             RELC_RELEVANCE2RELQs = []
             RelCTexts = []
             ORGQ_ID = []
+            OrgQSubject = []
             OrgQBody = []
             RELQ_RELEVANCE2ORGQ = []
             
@@ -40,6 +43,7 @@ class data_preprocessing:
                 RELQ_ID.append(RelQuestion.attrib['RELQ_ID'])
                 
                 # Relevant question body - A, B
+                RelQSubject.append(RelQuestion.find('RelQSubject').text)
                 RelQBody.append(RelQuestion.find('RelQBody').text)
                 
                 # Relevant comments IDs - A, C       
@@ -57,6 +61,7 @@ class data_preprocessing:
                     ORGQ_ID.append(question.attrib['ORGQ_ID'])
                     
                     # Original question body - B, C
+                    OrgQSubject.append(question.find('OrgQSubject').text)
                     OrgQBody.append(question.find('OrgQBody').text)
                     
                     # Relevance between question and question - B
@@ -64,6 +69,7 @@ class data_preprocessing:
                 
             if self.task == 'task_A':
                 Task_dict['RELQ_ID'] = np.repeat(RELQ_ID, int(len(RELC_IDs) / len(RELQ_ID)))
+                Task_dict['RelQSubject'] = np.repeat(RelQSubject, int(len(RELC_IDs) / len(RELQ_ID)))
                 Task_dict['RelQBody'] = np.repeat(RelQBody, int(len(RELC_IDs) / len(RELQ_ID)))
                 Task_dict['RELC_ID'] = RELC_IDs
                 Task_dict['RELC_RELEVANCE2RELQ'] = RELC_RELEVANCE2RELQs
@@ -74,8 +80,10 @@ class data_preprocessing:
             
             elif self.task == 'task_B':
                 Task_dict['ORGQ_ID'] = ORGQ_ID
+                Task_dict['OrgQSubject'] = OrgQSubject
                 Task_dict['OrgQBody'] = OrgQBody
                 Task_dict['RELQ_ID'] = RELQ_ID
+                Task_dict['RelQSubject'] = RelQSubject
                 Task_dict['RelQBody'] = RelQBody
                 Task_dict['RELQ_RELEVANCE2ORGQ'] = RELQ_RELEVANCE2ORGQ
                 
@@ -84,6 +92,7 @@ class data_preprocessing:
                 
             else:
                 Task_dict['ORGQ_ID'] = np.repeat(ORGQ_ID, int(len(RELC_IDs) / len(ORGQ_ID)))
+                Task_dict['OrgQSubject'] = np.repeat(OrgQSubject, int(len(RELC_IDs) / len(ORGQ_ID)))
                 Task_dict['OrgQBody'] = np.repeat(OrgQBody, int(len(RELC_IDs) / len(ORGQ_ID)))
                 Task_dict['RELC_ID'] = RELC_IDs
                 Task_dict['RELC_RELEVANCE2RELQ'] = RELC_RELEVANCE2RELQs
