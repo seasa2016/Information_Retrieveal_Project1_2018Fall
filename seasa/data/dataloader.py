@@ -36,7 +36,7 @@ class itemDataset(Dataset):
         with open(vocab) as f:
             for line in f:
                 line = line.strip().split()[0]
-                self.vocab[line] = len(self.vocab)
+                self.vocab[line] = len(self.vocab)+1
 
     def add_data(self,file_name,task='taskA'):
         def replace(line):
@@ -65,6 +65,8 @@ class itemDataset(Dataset):
         
             temp['query'] = remove(data['Subject']) + remove(data['Body'])
             temp['query_len'] = len(temp['query'])
+            if(temp['query_len']==0):
+                continue
             
             pre = {2:[],1:[],0:[]}
 
@@ -101,9 +103,9 @@ class itemDataset(Dataset):
                             temp['left_type'] = 1 if(x>=1) else 0
                             temp['right_type'] = 1 if(x>=1) else 0
                             
+                            if(temp['left_len']==0 or temp['right_len']==0):
+                                continue
                             self.data.append(temp.copy())
-                    break
-                break
 
                     
             elif("RelQuestion" in data):
@@ -131,6 +133,9 @@ class itemDataset(Dataset):
                             
                             temp['left_type'] = 1 if(x>=1) else 0
                             temp['right_type'] = 1 if(x>=1) else 0
+
+                            if(temp['left_len']==0 or temp['right_len']==0):
+                                continue
                             
                             self.data.append(temp.copy())
                     
@@ -139,7 +144,7 @@ class itemDataset(Dataset):
         return len(self.data)
     def __getitem__(self, idx):
         sample = self.data[idx]
-        print('idx',idx)
+        
         if self.transform:
             sample = self.transform(sample)
         return sample
@@ -161,23 +166,25 @@ def collate_fn(data):
     ['query_len','left_len','right_len']
     ['left_type','right_type']
     """
-    print(data)
     output = dict()
 
     for name in ['query_len','left_len','right_len']:
         temp = [ _[name] for _ in data]
         
         output[name] = torch.stack(temp, dim=0) 
-    print(output)
 
     #deal with source and target
-    for t in ['query','left','right']:
-        l = data
+    for name in ['right','query','left']:
+        length = output['{0}_len'.format(name)]
+        l = length.max().item()
 
         for i in range(len(data)):
-            if(l-data[i][t].shape[0]):
-                data[i][t] =  torch.cat([data[i][t],torch.zeros(l-data[i][t].shape[0],dtype=torch.long)],dim=-1)
-    
+            if(l-length[i].item()>0):
+                data[i][name] =  torch.cat([data[i][name],torch.zeros(l-length[i].item(),dtype=torch.long)],dim=-1)
+
+        temp = [ _[name] for _ in data]
+        output[name] = torch.stack(temp, dim=0) 
+        
     
     return output
 
@@ -187,11 +194,10 @@ if(__name__ == '__main__'):
                                 transform=transforms.Compose([ToTensor()]))
     
     
-    dataloader = DataLoader(dataset, batch_size=2,shuffle=False, num_workers=1,collate_fn=collate_fn)
-    """
+    dataloader = DataLoader(dataset, batch_size=100,shuffle=False, num_workers=1,collate_fn=collate_fn)
+    
     for i,data in enumerate(dataloader):
-        #if(i==0):
-        #    print(data) 
-        #break
-        print(i)
-    """
+        if(i==0):
+            print(data)
+    print('finish')
+    
