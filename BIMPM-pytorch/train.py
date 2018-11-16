@@ -106,7 +106,7 @@ def train(args, data):
 def main():
     parser = argparse.ArgumentParser()
     
-    parser.add_argument('--batch-size', default=32, type=int)
+    parser.add_argument('--batch-size', default=50, type=int)
     parser.add_argument('--char-dim', default=20, type=int)
     parser.add_argument('--char-hidden-size', default=80, type=int)
     parser.add_argument('--data-type', default='SemEval', help='available: SNLI or Quora')
@@ -131,7 +131,7 @@ def main():
         data = Quora(args)
     elif args.data_type == 'SemEval':
         print('loading SemEval data...')
-        data = SemEval(args)
+        data = SemEval(args,'taskB')
     else:
         raise NotImplementedError('only SNLI or Quora data is possible')
 

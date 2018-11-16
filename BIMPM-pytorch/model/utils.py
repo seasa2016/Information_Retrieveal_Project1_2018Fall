@@ -110,6 +110,9 @@ class Quora():
 
 class SemEval():
     def __init__(self, args,task='taskA'):
+        """
+        set up the data
+        """
         self.RAW = data.RawField()
         self.TEXT = data.Field(batch_first=True)
         self.LABEL = data.Field(sequential=False, unk_token=None)

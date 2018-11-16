@@ -5,5 +5,4 @@
 *.relevancy
 *.in
 *.json
-*.vocab
 *.pyc
