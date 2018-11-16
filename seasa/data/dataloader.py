@@ -9,20 +9,74 @@ import numpy as np
 import torch
 import pandas as pd
 import sys
-import parser
+from .parser import parser
+import re
+import string
 
 #add sos bos
 class itemDataset(Dataset):
     def __init__(self, file_name,transform=None):
        
-		data_load = parser(file_name,'taskA') 
-		add_data(parse,'taskA')
-		data_load = parser(file_name,'taskB')
-		add_data(parse,'taskB')
+        self.data = []
+
+        self.add_data(file_name,'taskA')
+        self.add_data(file_name,'taskB')
 
         self.transform = transform
-	def add_data(self,parse,task='taskA'):
-		
+    def add_data(self,file_name,task='taskA'):
+        def remove(line):
+            if(line is None):
+                return '' 
+            line = re.sub('['+string.punctuation+']', ' ', line)
+            line = re.sub('  ', ' ', line)
+
+            l = len(line.strip().split())
+            if(l>200):
+                return None
+            return line.lower().strip()
+        
+        dataloader = parser(file_name,task)
+
+        for data in dataloader.iterator():
+            temp = {}
+            temp['query'] = remove(data['Subject']) + ' ' + remove(data['Body'])
+            temp['answer'] = {2:[],1:[],0:[]}
+
+            if("Comment" in data):
+                for comment in data["Comment"]:
+                    text = remove(comment["Text"])
+                    
+                    if('RELEVANCE2RELQ' in comment):
+                        rel = comment["RELEVANCE2RELQ"]
+                    elif('RELEVANCE2ORGQ' in comment):
+                        rel = comment["RELEVANCE2ORGQ"]
+                    if(rel=='Good'):
+                        rel = 2
+                    elif(rel=='Bad'):
+                        rel = 0
+                    elif(rel=='PotentiallyUseful'):
+                        rel = 1
+
+                    if(text == None):
+                        continue
+
+                    f.write('{0}\t{1}\t{2}\t{3}\n'.format(rel,title,text,idx))
+                    
+            elif("RelQuestion" in data):
+                for ques in data["RelQuestion"]:
+                    text = remove(ques["Subject"]) + ' ' + remove(ques['Body'])
+                    rel = ques["RELEVANCE2ORGQ"]
+                    
+                    if(rel=='PerfectMatch'):
+                        rel = 1
+                    elif(rel=='Relevant'):
+                        rel = 0
+                    elif(rel=='Irrelevant'):
+                        rel = 0
+                    
+                    f.write('{0}\t{1}\t{2}\t{3}\n'.format(rel,title,text,idx))
+                    
+
     def __len__(self):
         return len(self.data)
     def __getitem__(self, idx):
