@@ -177,13 +177,13 @@ class parser:
 
 def main():
 	data= [
-		'./../data/training_data/SemEval2015-Task3-CQA-QL-dev-reformatted-excluding-2016-questions-cleansed.xml',
-		'./../data/training_data/SemEval2015-Task3-CQA-QL-test-reformatted-excluding-2016-questions-cleansed.xml',
-		'./../data/training_data/SemEval2015-Task3-CQA-QL-train-reformatted-excluding-2016-questions-cleansed.xml',
-		'./../data/training_data/SemEval2016-Task3-CQA-QL-dev.xml',
-		'./../data/training_data/SemEval2016-Task3-CQA-QL-test.xml',
-		'./../data/training_data/SemEval2016-Task3-CQA-QL-train-part1.xml',
-		'./../data/training_data/SemEval2016-Task3-CQA-QL-train-part2.xml'
+		'./../../data/training_data/SemEval2015-Task3-CQA-QL-dev-reformatted-excluding-2016-questions-cleansed.xml',
+		'./../../data/training_data/SemEval2015-Task3-CQA-QL-test-reformatted-excluding-2016-questions-cleansed.xml',
+		'./../../data/training_data/SemEval2015-Task3-CQA-QL-train-reformatted-excluding-2016-questions-cleansed.xml',
+		'./../../data/training_data/SemEval2016-Task3-CQA-QL-dev.xml',
+		'./../../data/training_data/SemEval2016-Task3-CQA-QL-test.xml',
+		'./../../data/training_data/SemEval2016-Task3-CQA-QL-train-part1.xml',
+		'./../../data/training_data/SemEval2016-Task3-CQA-QL-train-part2.xml'
 		]
 	parser(data,sys.argv[1])
 if(__name__ == '__main__'):

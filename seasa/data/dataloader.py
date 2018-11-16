@@ -11,10 +11,11 @@ import torch
 import pandas as pd
 import sys
 
-from . import parser
+from data import parser
 
 import re
 import string
+import json
 
 #add sos bos
 class itemDataset(Dataset):
@@ -57,8 +58,9 @@ class itemDataset(Dataset):
 			if( len(line) > 200 ):
 				return []
 			return line
-		
 		dataloader = parser.parser(file_name,task)
+		with open(task,'w') as f:
+			json.dump(dataloader.data,f,indent=4)
 
 		for data in dataloader.iterator():
 			temp = {}
@@ -91,7 +93,7 @@ class itemDataset(Dataset):
 					pre[rel].append(text)
 
 				#parse these into pair
-				for x,y in [(2,1),(1,0),(2,0)]:
+				for x,y in [(2,1),(1,0),(0,2)]:
 					for left in pre[x]:
 						for right in pre[y]:
 							temp['left'] = left
@@ -101,8 +103,9 @@ class itemDataset(Dataset):
 							temp['right_len'] = len(right)
 							
 							temp['left_type'] = 1 if(x>=1) else 0
-							temp['right_type'] = 1 if(x>=1) else 0
+							temp['right_type'] = 1 if(y>=1) else 0
 							
+							temp['total_type'] = 1 if(x>y) else 0
 							if(temp['left_len']==0 or temp['right_len']==0):
 								continue
 							self.data.append(temp.copy())
@@ -122,7 +125,7 @@ class itemDataset(Dataset):
 					pre[rel].append(text)
 				#parse these into pair
 				#parse these into pair
-				for x,y in [(2,1),(1,0),(2,0)]:
+				for x,y in [(2,1),(1,0),(0,2)]:
 					for left in pre[x]:
 						for right in pre[y]:
 							temp['left'] = left
@@ -132,8 +135,10 @@ class itemDataset(Dataset):
 							temp['right_len'] = len(right)
 							
 							temp['left_type'] = 1 if(x>=1) else 0
-							temp['right_type'] = 1 if(x>=1) else 0
+							temp['right_type'] = 1 if(y>=1) else 0
 
+							temp['total_type'] = 1 if(x>y) else 0
+							
 							if(temp['left_len']==0 or temp['right_len']==0):
 								continue
 							
@@ -154,7 +159,7 @@ class ToTensor(object):
 		for name in ['query','left','right','query_len','left_len','right_len']:
 			sample[name] = torch.tensor(sample[name],dtype=torch.long)
 			
-		for name in ['left_type','right_type']:
+		for name in ['left_type','right_type','total_type']:
 			sample[name] = torch.tensor(sample[name],dtype=torch.float)
 			
 		return sample
@@ -164,15 +169,15 @@ def collate_fn(data):
 	parsing the data list into batch tensor
 	['query','left','right']
 	['query_len','left_len','right_len']
-	['left_type','right_type']
+	['left_type','right_type','total_type']
 	"""
 	output = dict()
 
-	for name in ['query_len','left_len','right_len','left_type','right_type']:
+	for name in ['query_len','left_len','right_len','left_type','right_type','total_type']:
 		temp = [ _[name] for _ in data]	 
 		output[name] = torch.stack(temp, dim=0) 
 	
-	for name in ['left_type','right_type']:
+	for name in ['left_type','right_type','total_type']:
 		output[name] = output[name].view(-1,1)
 
 	#deal with source and target
@@ -192,14 +197,14 @@ def collate_fn(data):
 
 if(__name__ == '__main__'):
 	print('QQQ')
-	dataset = itemDataset( file_name='./semeval/training_data/SemEval2015-Task3-CQA-QL-dev-reformatted-excluding-2016-questions-cleansed.xml',vocab='./vocab',
+	dataset = itemDataset( file_name='./semeval/training_data/SemEval2016-Task3-CQA-QL-dev.xml',vocab='./vocab',
 								transform=transforms.Compose([ToTensor()]))
 	
 	
-	dataloader = DataLoader(dataset, batch_size=100,shuffle=False, num_workers=1,collate_fn=collate_fn)
+	dataloader = DataLoader(dataset, batch_size=100,shuffle=True, num_workers=1,collate_fn=collate_fn)
 	
 	for i,data in enumerate(dataloader):
 		if(i==0):
-			print(data)
+			print(data['total_type'])
 	print('finish')
 	

@@ -131,10 +131,10 @@ def train(args):
 			out = model.rank(out_left,out_right)
 			pred = (out>0.5).int()
 			
-			temp_Count['rank'] =  pred.sum()
+			temp_Count['rank'] +=  pred.sum()
 			Count['rank'] +=  pred.sum()
 			
-			loss = criterion(out,torch.ones(data['right_type'].shape[0],1,dtype=torch.float).to(device)) 
+			loss = criterion(out,data['total_type']) 
 			
 			temp_Loss['rank'] = loss.detach().cpu().item()
 			Loss['rank'] += loss.detach().cpu().item()
@@ -142,9 +142,8 @@ def train(args):
 			
 			optimizer.step()
 			
-			if(i%100==0):
-				print(i,' training loss(class):{0} loss(rank):{1} acc:{2}/{3} {4}/{5}'.format(
-							temp_Loss['class'],temp_Loss['rank'],temp_Count['class'],args.batch_size*200,temp_Count['rank'],args.batch_size*100))
+			if(i%20==0):
+				print(i,' training loss(class):{0} loss(rank):{1} acc:{2}/{3} {4}/{5}'.format(temp_Loss['class'],temp_Loss['rank'],temp_Count['class'],args.batch_size*40,temp_Count['rank'],args.batch_size*20))
 
 				temp_Loss = {'class':0,'rank':0}
 				temp_Count = {'class':0,'rank':0}
@@ -186,8 +185,9 @@ def train(args):
 				out = model.rank(out_left,out_right)
 				pred = (out>0.5).int()
 				Count['rank'] +=  pred.sum()
-				loss = criterion(out,torch.ones(data['right_type'].shape[0],1,dtype=torch.float).to(device)) 
+				loss = criterion(out,data['total_type']) 
 				Loss['rank'] += loss.detach().cpu().item()
+
 		if(now%args.print_freq==0):
 			print('*'*10)
 			print(i,' testing loss(class):{0} loss(rank):{1} acc:{2}/{3} {4}/{5}'.format(
