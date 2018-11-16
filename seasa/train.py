@@ -97,7 +97,7 @@ def train(args):
 
 			#deal with the classfication part
 			out_left = model.encoder(data['query'],data['query_len'],data['left'],data['left_len'])
-			out = model.decode(out_left)
+			out = model.decoder(out_left)
 			pred = out>0.5
 			Count['class'] += ( data['left_type']==pred ).sum()
 			loss = criterion(out,data['left_type']) 
@@ -105,7 +105,7 @@ def train(args):
 			Loss['class'] += loss.detach().cpu().item()
 
 			out_right = model.encoder(data['query'],data['query_len'],data['right'],data['right_len'])
-			out = model.decode(out_right)
+			out = model.decoder(out_right)
 			pred = out>0.5
 			Count['class'] += ( data['right_type']==pred ).sum()
 			loss = criterion(out,data['right_type']) 
@@ -141,14 +141,14 @@ def train(args):
 
 				#deal with the classfication part
 				out_left = model.encoder(data['query'],data['query_len'],data['left'],data['left_len'])
-				out = model.decode(out_left)
+				out = model.decoder(out_left)
 				pred = out>0.5
 				Count['class'] += ( data['left_type']==pred ).sum()
 				loss = criterion(out,data['left_type']) 
 				Loss['class'] += loss.detach().cpu().item()
 
 				out_right = model.encoder(data['query'],data['query_len'],data['right'],data['right_len'])
-				out = model.decode(out_right)
+				out = model.decoder(out_right)
 				pred = out>0.5
 				Count['class'] += ( data['right_type']==pred ).sum()
 				loss = criterion(out,data['right_type']) 
