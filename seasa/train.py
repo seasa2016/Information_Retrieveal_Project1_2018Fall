@@ -28,11 +28,6 @@ def get_data(batch_size):
 	"""
 	train_file = [
 	'./data/semeval/training_data/SemEval2015-Task3-CQA-QL-dev-reformatted-excluding-2016-questions-cleansed.xml',
-	'./data/semeval/training_data/SemEval2015-Task3-CQA-QL-test-reformatted-excluding-2016-questions-cleansed.xml',
-	'./data/semeval/training_data/SemEval2015-Task3-CQA-QL-train-reformatted-excluding-2016-questions-cleansed.xml',
-	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-dev.xml',
-	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-train-part1.xml',
-	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-train-part2.xml'
 	]
 	test_file = [
 		'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-test.xml'
@@ -90,6 +85,7 @@ def train(args):
 
 		model.train()
 		for i,data in enumerate(dataloader['train']):
+			print('i',i)
 			model.zero_grad()
 
 			#first convert the data into cuda
@@ -97,29 +93,27 @@ def train(args):
 
 			#deal with the classfication part
 			out_left = model.encoder(data['query'],data['query_len'],data['left'],data['left_len'])
-			arr = []
-			arr[0] += 1
 			out = model.decoder(out_left)
-			pred = out>0.5
-			Count['class'] += ( data['left_type']==pred ).sum()
+			pred = (out>0.5).int()
+			Count['class'] += ( data['left_type'].int()==pred ).sum()
 			loss = criterion(out,data['left_type']) 
-			loss.backward()
+			loss.backward(retain_graph=True)
 			Loss['class'] += loss.detach().cpu().item()
 
 			out_right = model.encoder(data['query'],data['query_len'],data['right'],data['right_len'])
 			out = model.decoder(out_right)
-			pred = out>0.5
-			Count['class'] += ( data['right_type']==pred ).sum()
+			pred = (out>0.5).int()
+			Count['class'] += ( data['right_type'].int()==pred ).sum()
 			loss = criterion(out,data['right_type']) 
-			loss.backward()
+			loss.backward(retain_graph=True)
 			Loss['class'] += loss.detach().cpu().item()
 
 
 			#deal with the ranking part
 			out = model.rank(out_left,out_right)
-			pred = out>0.5
+			pred = (out>0.5).int()
 			Count['rank'] +=  pred.sum()
-			loss = criterion(out,torch.ones(data['right_type'].shape[0])) 
+			loss = criterion(out,torch.ones(data['right_type'].shape[0],1)) 
 			Loss['rank'] += loss.detach().cpu().item()
 			loss.backward()
 			
@@ -185,8 +179,8 @@ def main():
 	parser.add_argument('--gpu', default=0, type=int)
 	
 	parser.add_argument('--word_dim', default=128, type=int)
-	parser.add_argument('--hidden_size', default=128, type=int)
-	parser.add_argument('--num_layers', default=1, type=int)
+	parser.add_argument('--hidden_dim', default=128, type=int)
+	parser.add_argument('--num_layer', default=1, type=int)
 
 	parser.add_argument('--learning_rate', default=0.001, type=float)
 	parser.add_argument('--model', default=0.001, type=str)
