@@ -28,6 +28,11 @@ def get_data(batch_size):
 	"""
 	train_file = [
 	'./data/semeval/training_data/SemEval2015-Task3-CQA-QL-dev-reformatted-excluding-2016-questions-cleansed.xml',
+	'./data/semeval/training_data/SemEval2015-Task3-CQA-QL-test-reformatted-excluding-2016-questions-cleansed.xml',
+	'./data/semeval/training_data/SemEval2015-Task3-CQA-QL-train-reformatted-excluding-2016-questions-cleansed.xml',
+	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-dev.xml',
+	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-train-part1.xml',
+	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-train-part2.xml'
 	]
 	test_file = [
 		'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-test.xml'
@@ -35,11 +40,11 @@ def get_data(batch_size):
 
 	train_dataset = itemDataset( file_name=train_file,vocab='./data/vocab',
                                 transform=transforms.Compose([ToTensor()]))
-	train_dataloader = DataLoader(train_dataset, batch_size=batch_size,shuffle=True, num_workers=1,collate_fn=collate_fn)
+	train_dataloader = DataLoader(train_dataset, batch_size=batch_size,shuffle=True, num_workers=16,collate_fn=collate_fn)
 
 	valid_dataset = itemDataset( file_name=test_file,vocab='./data/vocab',
 								transform=transforms.Compose([ToTensor()]))
-	valid_dataloader = DataLoader(valid_dataset, batch_size=batch_size,shuffle=False, num_workers=1,collate_fn=collate_fn)
+	valid_dataloader = DataLoader(valid_dataset, batch_size=batch_size,shuffle=False, num_workers=16,collate_fn=collate_fn)
     
 	dataloader = {}
 	dataloader['train'] = train_dataloader
@@ -58,7 +63,7 @@ def convert(data,device):
 
 def train(args):
 	print("check device")
-	if(torch.cuda.is_available() and args.gpu):
+	if(torch.cuda.is_available() and args.gpu>=0):
 		device = torch.device('cuda')
 		print('the device is in cuda')
 	else:
@@ -67,6 +72,7 @@ def train(args):
 
 	print("loading data")
 	dataloader,length = get_data(args.batch_size)
+	print(length)
 	print("setting model")
 	model = simple_rnn(args)
 	model = model.to(device=device)
@@ -82,10 +88,12 @@ def train(args):
 		
 		Loss = {'class':0,'rank':0}
 		Count = {'class':0,'rank':0}
+		temp_Loss = {'class':0,'rank':0}
+		temp_Count = {'class':0,'rank':0}
 
 		model.train()
 		for i,data in enumerate(dataloader['train']):
-			print('i',i)
+			#print(i)
 			model.zero_grad()
 
 			#first convert the data into cuda
@@ -95,33 +103,55 @@ def train(args):
 			out_left = model.encoder(data['query'],data['query_len'],data['left'],data['left_len'])
 			out = model.decoder(out_left)
 			pred = (out>0.5).int()
+			
+			temp_Count['class'] += ( data['right_type'].int()==pred ).sum()
 			Count['class'] += ( data['left_type'].int()==pred ).sum()
+			
 			loss = criterion(out,data['left_type']) 
 			loss.backward(retain_graph=True)
+			
+			temp_Loss['class'] += loss.detach().cpu().item()
 			Loss['class'] += loss.detach().cpu().item()
 
 			out_right = model.encoder(data['query'],data['query_len'],data['right'],data['right_len'])
 			out = model.decoder(out_right)
 			pred = (out>0.5).int()
+			
+			temp_Count['class'] += ( data['right_type'].int()==pred ).sum()
 			Count['class'] += ( data['right_type'].int()==pred ).sum()
+			
 			loss = criterion(out,data['right_type']) 
 			loss.backward(retain_graph=True)
+			
+			temp_Loss['class'] += loss.detach().cpu().item()
 			Loss['class'] += loss.detach().cpu().item()
 
 
 			#deal with the ranking part
 			out = model.rank(out_left,out_right)
 			pred = (out>0.5).int()
+			
+			temp_Count['rank'] =  pred.sum()
 			Count['rank'] +=  pred.sum()
-			loss = criterion(out,torch.ones(data['right_type'].shape[0],1)) 
+			
+			loss = criterion(out,torch.ones(data['right_type'].shape[0],1,dtype=torch.float).to(device)) 
+			
+			temp_Loss['rank'] = loss.detach().cpu().item()
 			Loss['rank'] += loss.detach().cpu().item()
 			loss.backward()
 			
 			optimizer.step()
+			
+			if(i%100==0):
+				print(i,' training loss(class):{0} loss(rank):{1} acc:{2}/{3} {4}/{5}'.format(
+							temp_Loss['class'],temp_Loss['rank'],temp_Count['class'],args.batch_size*200,temp_Count['rank'],args.batch_size*100))
 
+				temp_Loss = {'class':0,'rank':0}
+				temp_Count = {'class':0,'rank':0}
+		
 		if(now%args.print_freq==0):
 			print('*'*10)
-			print('training loss(class):{0} loss(rank):{1} acc:{2}/{3} {4}/{6}'.format(
+			print('training loss(class):{0} loss(rank):{1} acc:{2}/{3} {4}/{5}'.format(
 							Loss['class'],Loss['rank'],Count['class'],length['train']*2,Count['rank'],length['train']))
 		
 
@@ -131,6 +161,7 @@ def train(args):
 
 		model.eval()
 		for i,data in enumerate(dataloader['valid']):
+			#print(i)
 			with torch.no_grad():
 				#first convert the data into cuda
 				data = convert(data,device)
@@ -138,29 +169,28 @@ def train(args):
 				#deal with the classfication part
 				out_left = model.encoder(data['query'],data['query_len'],data['left'],data['left_len'])
 				out = model.decoder(out_left)
-				pred = out>0.5
-				Count['class'] += ( data['left_type']==pred ).sum()
+				pred = (out>0.5).int()
+				Count['class'] += ( data['left_type'].int()==pred ).sum()
 				loss = criterion(out,data['left_type']) 
 				Loss['class'] += loss.detach().cpu().item()
 
 				out_right = model.encoder(data['query'],data['query_len'],data['right'],data['right_len'])
 				out = model.decoder(out_right)
-				pred = out>0.5
-				Count['class'] += ( data['right_type']==pred ).sum()
+				pred = (out>0.5).int()
+				Count['class'] += ( data['right_type'].int()==pred ).sum()
 				loss = criterion(out,data['right_type']) 
 				Loss['class'] += loss.detach().cpu().item()
 
 
 				#deal with the ranking part
 				out = model.rank(out_left,out_right)
-				pred = out>0.5
+				pred = (out>0.5).int()
 				Count['rank'] +=  pred.sum()
-				loss = criterion(out,torch.ones(data['right_type'].shape[0])) 
+				loss = criterion(out,torch.ones(data['right_type'].shape[0],1,dtype=torch.float).to(device)) 
 				Loss['rank'] += loss.detach().cpu().item()
-
 		if(now%args.print_freq==0):
 			print('*'*10)
-			print('testing loss(class):{0} loss(rank):{1} acc:{2}/{3} {4}/{6}'.format(
+			print(i,' testing loss(class):{0} loss(rank):{1} acc:{2}/{3} {4}/{5}'.format(
 							Loss['class'],Loss['rank'],Count['class'],length['train']*2,Count['rank'],length['train']))
 		
 		
@@ -173,8 +203,8 @@ def train(args):
 def main():
 	parser = argparse.ArgumentParser()
 
-	parser.add_argument('--batch_size', default=32, type=int)
-	parser.add_argument('--dropout', default=0.1, type=float)
+	parser.add_argument('--batch_size', default=1024, type=int)
+	parser.add_argument('--dropout', default=0, type=float)
 	parser.add_argument('--epoch', default=200, type=int)
 	parser.add_argument('--gpu', default=0, type=int)
 	
@@ -182,14 +212,14 @@ def main():
 	parser.add_argument('--hidden_dim', default=128, type=int)
 	parser.add_argument('--num_layer', default=1, type=int)
 
-	parser.add_argument('--learning_rate', default=0.001, type=float)
-	parser.add_argument('--model', default=0.001, type=str)
+	parser.add_argument('--learning_rate', default=0.0001, type=float)
+	parser.add_argument('--model', default="simple_rnn", type=str)
 
-	parser.add_argument('--print_freq', default=600, type=int)
+	parser.add_argument('--print_freq', default=10, type=int)
 
 	args = parser.parse_args()
 
-	setattr(args, 'input_size', 49522+1)
+	setattr(args, 'input_size', 49526+1)
 	setattr(args,'batch_first',True)
 	setattr(args, 'class_size',1)
 	setattr(args, 'model_time', strftime('%H:%M:%S', gmtime()))

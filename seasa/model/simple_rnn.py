@@ -16,7 +16,7 @@ class Encoder(nn.Module):
 		self.dropout=args.dropout
 
 
-		self.word_embedding = nn.Embedding(args.input_size,args.word_dim)
+		self.word_embedding = nn.Embedding(args.input_size,args.word_dim,padding_idx=0)
 		self.rnn = nn.LSTM(
 			input_size=args.word_dim,
 			hidden_size=args.hidden_dim,
