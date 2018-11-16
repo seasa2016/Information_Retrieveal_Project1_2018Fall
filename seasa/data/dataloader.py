@@ -5,6 +5,7 @@ I would like to implement the  method with classify and ranking
 
 
 from torch.utils.data import Dataset,DataLoader
+from torchvision import transforms, utils
 import numpy as np
 import torch
 import pandas as pd
@@ -15,32 +16,55 @@ import string
 
 #add sos bos
 class itemDataset(Dataset):
-    def __init__(self, file_name,transform=None):
-       
+    def __init__(self, file_name,vocab,transform=None):
         self.data = []
+        
+        #first build the vocab
+        self.build_dict(vocab)
 
         self.add_data(file_name,'taskA')
         self.add_data(file_name,'taskB')
 
         self.transform = transform
+        
+        self.total_len = 0
+
+    def build_dict(self,vocab):
+        self.vocab = {}
+        with open(vocab) as f:
+            for line in f:
+                line = line.strip().split()[0]
+                self.vocab[line] = len(self.vocab)
+
     def add_data(self,file_name,task='taskA'):
+        def replace(line):
+            arr = []
+            for word in line.split():
+                arr.append(self.vocab(word))
+            return arr
+
         def remove(line):
             if(line is None):
                 return '' 
             line = re.sub('['+string.punctuation+']', ' ', line)
-            line = re.sub('  ', ' ', line)
-
-            l = len(line.strip().split())
-            if(l>200):
+            for i in range(5,1,-1):
+                line = re.sub(' '*i, ' ', line)
+            line = line.lower()
+            line = replace(line)
+            
+            if( len(line) > 200 ):
                 return None
-            return line.lower().strip()
+            return line
         
         dataloader = parser(file_name,task)
 
         for data in dataloader.iterator():
             temp = {}
-            temp['query'] = remove(data['Subject']) + ' ' + remove(data['Body'])
-            temp['answer'] = {2:[],1:[],0:[]}
+        
+            temp['query'] = remove(data['Subject']) + remove(data['Body'])
+            temp['query_len'] = len(temp['query'])
+            
+            pre = {2:[],1:[],0:[]}
 
             if("Comment" in data):
                 for comment in data["Comment"]:
@@ -60,7 +84,24 @@ class itemDataset(Dataset):
                     if(text == None):
                         continue
 
-                    f.write('{0}\t{1}\t{2}\t{3}\n'.format(rel,title,text,idx))
+                    pre[rel].append(text)
+
+                #parse these into pair
+                for x,y in [(2,1),(1,0),(2,0)]:
+                    for left in pre[x]:
+                        for right in pre[y]:
+                            temp['left'] = left
+                            temp['left_len'] = len(left)
+
+                            temp['right'] = right
+                            temp['right_len'] = len(right)
+                            
+                            temp['left_type'] = 1 if(x>=1) else 0
+                            temp['right_type'] = 1 if(x>=1) else 0
+                            
+                            self.data.append(temp)
+
+
                     
             elif("RelQuestion" in data):
                 for ques in data["RelQuestion"]:
@@ -68,13 +109,27 @@ class itemDataset(Dataset):
                     rel = ques["RELEVANCE2ORGQ"]
                     
                     if(rel=='PerfectMatch'):
-                        rel = 1
+                        rel = 2
                     elif(rel=='Relevant'):
-                        rel = 0
+                        rel = 1
                     elif(rel=='Irrelevant'):
                         rel = 0
-                    
-                    f.write('{0}\t{1}\t{2}\t{3}\n'.format(rel,title,text,idx))
+                    temp['answer'][rel].append(text)
+                #parse these into pair
+                #parse these into pair
+                for x,y in [(2,1),(1,0),(2,0)]:
+                    for left in pre[x]:
+                        for right in pre[y]:
+                            temp['left'] = left
+                            temp['left_len'] = len(left)
+
+                            temp['right'] = right
+                            temp['right_len'] = len(right)
+                            
+                            temp['left_type'] = 1 if(x>=1) else 0
+                            temp['right_type'] = 1 if(x>=1) else 0
+                            
+                            self.data.append(temp)
                     
 
     def __len__(self):
@@ -88,41 +143,20 @@ class itemDataset(Dataset):
 
 class ToTensor(object):
     def __call__(self,sample):
-        return{
-            'source':torch.tensor(sample['source'],dtype=torch.long),
-            'target':torch.tensor(sample['target'],dtype=torch.long),
-            'source_len':torch.tensor(sample['source_len'],dtype=torch.long),
-            'target_len':torch.tensor(sample['target_len'],dtype=torch.long),
-            'origin':torch.tensor(qq,dtype=torch.long)
-            }
+        for name in sample:
+            sample[name] = torch.tensor(sample[name],dtype=torch.long)
+        return sample
 
 def collate_fn(data):
-    
     output = dict()
     #deal with source and target
-    for t in ['source','target','origin']:
-        l = 0
-        for i in range(len(data)):
-            l = max(l,data[i][t].shape[0])
-        if(l == 0):
-            continue
+    for t in ['query','left','right']:
+        l = data
+
         for i in range(len(data)):
             if(l-data[i][t].shape[0]):
                 data[i][t] =  torch.cat([data[i][t],torch.zeros(l-data[i][t].shape[0],dtype=torch.long)],dim=-1)
     
-    
-    for name in [ 'source','target','origin']:
-        if(name not in data[0]):
-            continue
-
-        arr = [ data[i][name] for i in range(len(data))]
-        output[name] = torch.stack(arr,dim=0)
-    
-    output['source'] = output['source'].transpose(0,1)
-    output['source_len'] = torch.cat([ data[i]['source_len'] for i in range(len(data))],dim=0)
-    if('target' in output):
-        output['target'] = output['target'].transpose(0,1)
-        output['target_len'] = torch.cat([ data[i]['target_len'] for i in range(len(data))],dim=0)
     
     return output
 
@@ -132,8 +166,7 @@ if(__name__ == '__main__'):
                                 transform=transforms.Compose([ToTensor()]))
     
     
-    dataloader = DataLoader(dataset, batch_size=2,
-                        shuffle=False, num_workers=10,collate_fn=collate_fn)
+    dataloader = DataLoader(dataset, batch_size=2,shuffle=False, num_workers=10,collate_fn=collate_fn)
 
     for i,data in enumerate(dataloader):
         #if(i==0):
