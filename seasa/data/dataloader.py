@@ -10,7 +10,9 @@ import numpy as np
 import torch
 import pandas as pd
 import sys
-from .parser import parser
+
+import parser
+
 import re
 import string
 
@@ -40,12 +42,12 @@ class itemDataset(Dataset):
         def replace(line):
             arr = []
             for word in line.split():
-                arr.append(self.vocab(word))
+                arr.append(self.vocab[word])
             return arr
 
         def remove(line):
             if(line is None):
-                return '' 
+                return []
             line = re.sub('['+string.punctuation+']', ' ', line)
             for i in range(5,1,-1):
                 line = re.sub(' '*i, ' ', line)
@@ -53,10 +55,10 @@ class itemDataset(Dataset):
             line = replace(line)
             
             if( len(line) > 200 ):
-                return None
+                return []
             return line
         
-        dataloader = parser(file_name,task)
+        dataloader = parser.parser(file_name,task)
 
         for data in dataloader.iterator():
             temp = {}
@@ -99,8 +101,9 @@ class itemDataset(Dataset):
                             temp['left_type'] = 1 if(x>=1) else 0
                             temp['right_type'] = 1 if(x>=1) else 0
                             
-                            self.data.append(temp)
-
+                            self.data.append(temp.copy())
+                    break
+                break
 
                     
             elif("RelQuestion" in data):
@@ -114,7 +117,7 @@ class itemDataset(Dataset):
                         rel = 1
                     elif(rel=='Irrelevant'):
                         rel = 0
-                    temp['answer'][rel].append(text)
+                    pre[rel].append(text)
                 #parse these into pair
                 #parse these into pair
                 for x,y in [(2,1),(1,0),(2,0)]:
@@ -129,26 +132,44 @@ class itemDataset(Dataset):
                             temp['left_type'] = 1 if(x>=1) else 0
                             temp['right_type'] = 1 if(x>=1) else 0
                             
-                            self.data.append(temp)
+                            self.data.append(temp.copy())
                     
 
     def __len__(self):
         return len(self.data)
     def __getitem__(self, idx):
         sample = self.data[idx]
-        
+        print('idx',idx)
         if self.transform:
             sample = self.transform(sample)
         return sample
 
 class ToTensor(object):
     def __call__(self,sample):
-        for name in sample:
+        for name in ['query','left','right','query_len','left_len','right_len']:
             sample[name] = torch.tensor(sample[name],dtype=torch.long)
+            
+        for name in ['left_type','right_type']:
+            sample[name] = torch.tensor(sample[name],dtype=torch.float)
+            
         return sample
 
 def collate_fn(data):
+    """
+    parsing the data list into batch tensor
+    ['query','left','right']
+    ['query_len','left_len','right_len']
+    ['left_type','right_type']
+    """
+    print(data)
     output = dict()
+
+    for name in ['query_len','left_len','right_len']:
+        temp = [ _[name] for _ in data]
+        
+        output[name] = torch.stack(temp, dim=0) 
+    print(output)
+
     #deal with source and target
     for t in ['query','left','right']:
         l = data
@@ -162,15 +183,15 @@ def collate_fn(data):
 
 if(__name__ == '__main__'):
     print('QQQ')
-    dataset = itemDataset(file_name='playlist_20181023_train.csv',
+    dataset = itemDataset( file_name='./semeval/training_data/SemEval2015-Task3-CQA-QL-dev-reformatted-excluding-2016-questions-cleansed.xml',vocab='./vocab',
                                 transform=transforms.Compose([ToTensor()]))
     
     
-    dataloader = DataLoader(dataset, batch_size=2,shuffle=False, num_workers=10,collate_fn=collate_fn)
-
+    dataloader = DataLoader(dataset, batch_size=2,shuffle=False, num_workers=1,collate_fn=collate_fn)
+    """
     for i,data in enumerate(dataloader):
         #if(i==0):
         #    print(data) 
         #break
         print(i)
-            
+    """
