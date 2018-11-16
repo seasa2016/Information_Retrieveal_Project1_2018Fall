@@ -120,7 +120,7 @@ def main():
     parser.add_argument('--num-perspective', default=20, type=int)
     parser.add_argument('--print-freq', default=600, type=int)
     parser.add_argument('--use-char-emb', default=False, action='store_true')
-    parser.add_argument('--word-dim', default=300, type=int)
+    parser.add_argument('--word-dim', default=100, type=int)
     args = parser.parse_args()
 
     if args.data_type == 'SNLI':
