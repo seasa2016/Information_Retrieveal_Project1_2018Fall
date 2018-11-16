@@ -97,6 +97,8 @@ def train(args):
 
 			#deal with the classfication part
 			out_left = model.encoder(data['query'],data['query_len'],data['left'],data['left_len'])
+			arr = []
+			arr[0] += 1
 			out = model.decoder(out_left)
 			pred = out>0.5
 			Count['class'] += ( data['left_type']==pred ).sum()
@@ -175,34 +177,38 @@ def train(args):
 			loss_best = Loss['class']
 
 def main():
-    parser = argparse.ArgumentParser()
-    
-    parser.add_argument('--batch_size', default=32, type=int)
-    parser.add_argument('--dropout', default=0.1, type=float)
-    parser.add_argument('--epoch', default=200, type=int)
-    parser.add_argument('--gpu', default=0, type=int)
-    parser.add_argument('--hidden-size', default=100, type=int)
-    parser.add_argument('--learning_rate', default=0.001, type=float)
-    parser.add_argument('--model', default=0.001, type=str)
+	parser = argparse.ArgumentParser()
+
+	parser.add_argument('--batch_size', default=32, type=int)
+	parser.add_argument('--dropout', default=0.1, type=float)
+	parser.add_argument('--epoch', default=200, type=int)
+	parser.add_argument('--gpu', default=0, type=int)
 	
-    parser.add_argument('--print_freq', default=600, type=int)
-    parser.add_argument('--word-dim', default=128, type=int)
+	parser.add_argument('--word_dim', default=128, type=int)
+	parser.add_argument('--hidden_size', default=128, type=int)
+	parser.add_argument('--num_layers', default=1, type=int)
 
-    args = parser.parse_args()
+	parser.add_argument('--learning_rate', default=0.001, type=float)
+	parser.add_argument('--model', default=0.001, type=str)
 
-    setattr(args, 'word_vocab_size', 49522+1)
-    setattr(args, 'class_size',1)
-    setattr(args, 'model_time', strftime('%H:%M:%S', gmtime()))
+	parser.add_argument('--print_freq', default=600, type=int)
 
-    if not os.path.exists('saved_models'):
-        os.makedirs('saved_models')
+	args = parser.parse_args()
 
-    if not os.path.exists('./saved_models/{0}'.format(args.model_time)):
-        os.makedirs('./saved_models/{0}'.format(args.model_time))
-    
-    print('training start!')
-    train(args)
-    print('training finished!')
+	setattr(args, 'input_size', 49522+1)
+	setattr(args,'batch_first',True)
+	setattr(args, 'class_size',1)
+	setattr(args, 'model_time', strftime('%H:%M:%S', gmtime()))
+
+	if not os.path.exists('saved_models'):
+		os.makedirs('saved_models')
+
+	if not os.path.exists('./saved_models/{0}'.format(args.model_time)):
+		os.makedirs('./saved_models/{0}'.format(args.model_time))
+
+	print('training start!')
+	train(args)
+	print('training finished!')
 	
 
 
