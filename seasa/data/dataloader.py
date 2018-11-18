@@ -201,10 +201,10 @@ if(__name__ == '__main__'):
 								transform=transforms.Compose([ToTensor()]))
 	
 	
-	dataloader = DataLoader(dataset, batch_size=100,shuffle=True, num_workers=1,collate_fn=collate_fn)
+	dataloader = DataLoader(dataset, batch_size=16,shuffle=True, num_workers=1,collate_fn=collate_fn)
 	
 	for i,data in enumerate(dataloader):
 		if(i==0):
-			print(data['total_type'])
+			print(data)
 	print('finish')
 	

@@ -73,7 +73,7 @@ class Encoder(nn.Module):
 			#get the attention
 			attn_weight = answer_output.bmm(query_normal).squeeze(2)		 #batch*sentence*1
 			#perform mask for the padding data
-			attn_weight[mask] = 1e-8
+			attn_weight[mask] = -1e8
 			attn_weight = attn_weight.softmax(dim=-1).unsqueeze(2)	   #batch*sentence*1
 
 			answer_extract = (answer_output.transpose(1,2)).bmm(attn_weight).squeeze(2)
@@ -110,8 +110,7 @@ class Decoder(nn.Module):
 		self.linear1 = nn.Linear(4*args.hidden_dim,args.hidden_dim)
 		self.linear2 = nn.Linear(args.hidden_dim,1)
 
-		self.act = nn.Tanh()
-		self.output_act = nn.Sigmoid()
+		self.act = nn.Sigmoid()
 	def forward(self,x):
 		"""
 			here I will simply use two layer feedforward
@@ -120,7 +119,6 @@ class Decoder(nn.Module):
 		out = self.act(out)
 
 		out = self.linear2(out)
-		out = self.output_act(out)
 		
 		return out
 
