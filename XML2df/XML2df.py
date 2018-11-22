@@ -39,22 +39,25 @@ class data_preprocessing:
                 # Relevant question ID - A, B
                 if question.find('Thread') != None:
                     quest = question.find('Thread') # condition command cause of different types of xml files in 2015 and 2016  
-                    RelQuestion = quest.find('RelQuestion')
-                    RELQ_ID.append(RelQuestion.attrib['RELQ_ID'])
+                else:
+                    quest = question
                     
-                    # Relevant question body - A, B
-                    RelQSubject.append(RelQuestion.find('RelQSubject').text)
-                    RelQBody.append(RelQuestion.find('RelQBody').text)
-                    
-                    # Relevant comments IDs - A, C       
-                    RelComments = quest.findall('RelComment')
-                    RELC_IDs.extend([RelComment.attrib['RELC_ID'] for RelComment in RelComments]) # Ten IDs
-                    
-                    # Relevance between question and comments - A, C    
-                    RELC_RELEVANCE2RELQs.extend([RelComment.attrib['RELC_RELEVANCE2RELQ'] for RelComment in RelComments]) # Ten Evaluations
-                    
-                    # Relevant comments - A, C
-                    RelCTexts.extend([RelComment.find('RelCText').text for RelComment in RelComments]) # Ten Comments' texts
+                RelQuestion = quest.find('RelQuestion')
+                RELQ_ID.append(RelQuestion.attrib['RELQ_ID'])
+
+                # Relevant question body - A, B
+                RelQSubject.append(RelQuestion.find('RelQSubject').text)
+                RelQBody.append(RelQuestion.find('RelQBody').text)
+
+                # Relevant comments IDs - A, C       
+                RelComments = quest.findall('RelComment')
+                RELC_IDs.extend([RelComment.attrib['RELC_ID'] for RelComment in RelComments]) # Ten IDs
+
+                # Relevance between question and comments - A, C    
+                RELC_RELEVANCE2RELQs.extend([RelComment.attrib['RELC_RELEVANCE2RELQ'] for RelComment in RelComments]) # Ten Evaluations
+
+                # Relevant comments - A, C
+                RelCTexts.extend([RelComment.find('RelCText').text for RelComment in RelComments]) # Ten Comments' texts
                 
                 if self.task != 'task_A':
                     # Original Question ID - B, C
