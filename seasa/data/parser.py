@@ -46,16 +46,21 @@ class parser:
 				tree = ET.parse(f)
 				root = tree.getroot()	
 				out = self.convert(root)[1]
-				self.deal(out,task)
+
+				idx = f.find('-')
+				self.deal(out,f[idx-4:idx],task)
 		else:
 			tree = ET.parse(file)
 			root = tree.getroot()
 			out = self.convert(root)[1]
-			self.deal(out,task)
-		#with open(task,'w') as f:
-		#	json.dump(self.data,f,indent=4)
+			
+			idx = file.find('-')
+			self.deal(out,file[idx-4:idx],task)
+
+		with open(task,'w') as f:
+			json.dump(self.data,f,indent=4)
 		
-	def deal(self,out,task='taskA'):
+	def deal(self,out,year,task='taskA'):
 		"""
 			here we convert the dict to the final data
 		"""
@@ -66,6 +71,8 @@ class parser:
 				for _ in out['OrgQuestion']:
 
 					temp_op = { name:_[name] for name in ["ID","Subject","Body"]}
+					temp_op["ID"] = '{0}_{1}'.format(temp_op["ID"],year)
+
 					temp_op['Comment'] = []
 					if("SubtaskA_Skip_Because_Same_As_RelQuestion_ID" not in _["Thread"]):
 						temp_rp = {name:_["Thread"][0]["RelQuestion"][name] for name in ["ID","CATEGORY","DATE","USERID","USERNAME","Subject","Body"]}
@@ -95,6 +102,8 @@ class parser:
 			if('Thread' in out):
 				for temp in out['Thread']:
 					temp_rp = {name:temp["RelQuestion"][name] for name in ["ID","CATEGORY","DATE","USERID","USERNAME","Subject","Body"]}
+					temp_rp["ID"] = '{0}_{1}'.format(temp_rp["ID"],year)
+					
 					try:
 						temp_rp['Comment'] = temp["Comment"]
 					except KeyError:
@@ -111,6 +120,7 @@ class parser:
 				for temp in out['OrgQuestion']:
 					temp_op = { name:temp[name] for name in ["ID","Subject","Body"]}
 					temp_op["RelQuestion"] = [temp['Thread'][0]["RelQuestion"]]
+					temp_op["ID"] = '{0}_{1}'.format(temp_op["ID"],year)
 					
 
 					try:
@@ -123,6 +133,7 @@ class parser:
 			if('OrgQuestion' in out):
 				for temp in out['OrgQuestion']:
 					temp_op = {name:temp[name] for name in ["ID","Subject","Body"]}
+					temp_op["ID"] = '{0}_{1}'.format(temp_op["ID"],year)
 					temp_op["Thread"] = [{name:temp["Thread"][0][name] for name in ["RelQuestion","Comment"]}]
 					
 					try:
@@ -165,7 +176,16 @@ class parser:
 			yield(self.data[name])
 
 def main():
-	parser(sys.argv[1],sys.argv[2])
+	data= [
+		'./../../data/training_data/SemEval2015-Task3-CQA-QL-dev-reformatted-excluding-2016-questions-cleansed.xml',
+		'./../../data/training_data/SemEval2015-Task3-CQA-QL-test-reformatted-excluding-2016-questions-cleansed.xml',
+		'./../../data/training_data/SemEval2015-Task3-CQA-QL-train-reformatted-excluding-2016-questions-cleansed.xml',
+		'./../../data/training_data/SemEval2016-Task3-CQA-QL-dev.xml',
+		'./../../data/training_data/SemEval2016-Task3-CQA-QL-test.xml',
+		'./../../data/training_data/SemEval2016-Task3-CQA-QL-train-part1.xml',
+		'./../../data/training_data/SemEval2016-Task3-CQA-QL-train-part2.xml'
+		]
+	parser(data,sys.argv[1])
 if(__name__ == '__main__'):
 	main()
 

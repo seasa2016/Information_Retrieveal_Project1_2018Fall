@@ -116,17 +116,16 @@ class Dncoder(nn.Module):
         
         return out
 
-
 class simple_rnn(nn.Module):
-    def __init__(self,args):
-        super(simple_rnn,self).__init__()
+	def __init__(self,args):
+		super(simple_rnn,self).__init__()
 
-        self.encoder = Encoder(args)
-        self.decoder = Dncoder(args)
-        self.rank = Rank(args)
-    
-    def forward(self):
-        """
-            I will not use this partXDD
-        """
-        pass
+		self.encoder = Encoder(args)
+		self.decoder = Decoder(args)
+		self.rank = Rank(args)
+	
+	def forward(self):
+		"""
+			I will not use this partXDD
+		"""
+		pass

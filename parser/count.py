@@ -14,7 +14,9 @@ def remove(line):
 	if(line is None):
 		return ''
 	line = re.sub('['+string.punctuation+']', ' ', line)
-	line = re.sub('  ', ' ', line)
+	for i in range(5,1,-1):
+		line = re.sub(' '*i, ' ', line)
+	
 	return line.lower().strip().split()
 
 def add(vocab,line):
@@ -57,17 +59,18 @@ datalist = [
 		]
 dataloader = parser(datalist,task)
 
-stat = {"Subject":{},"Body":{},"Text":{}}
+#stat = {"Subject":{},"Body":{},"Text":{}}
 
 for data in dataloader.iterator():
 	if(data["ID"] in ID):
 		continue
 	ID.add(data["ID"])
 
-	num = len(remove(data["Subject"]))
-	count(stat,num,"Subject")
-	num = len(remove(data["Body"]))
-	count(stat,num,"Body")
+	subject = remove(data["Subject"])
+	add(vocab,subject)
+	
+	body = remove(data["Body"])
+	add(vocab,body)
 
 	if("Comment" in data):
 		for comment in data["Comment"]:
@@ -75,8 +78,8 @@ for data in dataloader.iterator():
 				continue
 			ID.add(comment["ID"])
 
-			num = len(remove(comment["Text"]))
-			count(stat,num,"Text")
+			text = remove(comment["Text"])
+			add(vocab,text)
 
 	elif("RelQuestion" in data):
 		for ques in data["RelQuestion"]:
@@ -101,13 +104,8 @@ for data in dataloader.iterator():
 				count(stat,num,"Text")
 
 
-for dtype in stat:
-	arr = []
-	for num in stat[dtype]:
-		while(len(arr) <= num):
-			arr.append(0)
-		arr[num] = stat[dtype][num]
-	
-	plt.plot(list(range(len(arr))),arr)
-	plt.show()
+arr = [(name,vocab[name]) for name in vocab]
+with open('vocab','w') as f:
+	for word in arr:
+		f.write('{0} {1}\n'.format(word[0],word[1]))
 

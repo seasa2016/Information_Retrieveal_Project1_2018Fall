@@ -26,74 +26,76 @@ def train(args, data):
     model.train()
     loss, last_epoch = 0, -1
     max_dev_acc, max_test_acc = 0, 0
-
+    print(args.epoch)
     iterator = data.train_iter
-    for i, batch in enumerate(iterator):
-        present_epoch = int(iterator.epoch)
-        if present_epoch == args.epoch:
-            break
-        if present_epoch > last_epoch:
-            print('epoch:', present_epoch + 1)
-        last_epoch = present_epoch
+    for j in enumerate(range(args.epoch)):
+        for i, batch in enumerate(iterator):
+            present_epoch = int(iterator.epoch)
+            if present_epoch > last_epoch:
+                print('epoch:', present_epoch + 1)
+                last_epoch = present_epoch
+            
 
-        if args.data_type == 'SNLI':
-            s1, s2 = 'premise', 'hypothesis'
-        else:
-            s1, s2 = 'q1', 'q2'
+            if args.data_type == 'SNLI':
+                s1, s2 = 'premise', 'hypothesis'
+            else:
+                s1, s2 = 'q1', 'q2'
 
-        s1, s2 = getattr(batch, s1), getattr(batch, s2)
+            s1, s2 = getattr(batch, s1), getattr(batch, s2)
 
-        # limit the lengths of input sentences up to max_sent_len
-        if args.max_sent_len >= 0:
-            if s1.shape[1] > args.max_sent_len:
-                s1 = s1[:, :args.max_sent_len]
-            if s2.shape[1] > args.max_sent_len:
-                s2 = s2[:, :args.max_sent_len]
+            # limit the lengths of input sentences up to max_sent_len
+            if args.max_sent_len >= 0:
+                if s1.shape[1] > args.max_sent_len:
+                    s1 = s1[:, :args.max_sent_len]
+                if s2.shape[1] > args.max_sent_len:
+                    s2 = s2[:, :args.max_sent_len]
 
-        kwargs = {'p': s1, 'h': s2}
+            kwargs = {'p': s1, 'h': s2}
 
-        if args.use_char_emb:
-            char_p = torch.LongTensor(data.characterize(s1))
-            char_h = torch.LongTensor(data.characterize(s2))
+            if args.use_char_emb:
+                char_p = torch.LongTensor(data.characterize(s1))
+                char_h = torch.LongTensor(data.characterize(s2))
 
-            if args.gpu > -1:
-                char_p = char_p.cuda(args.gpu)
-                char_h = char_h.cuda(args.gpu)
+                if args.gpu > -1:
+                    char_p = char_p.cuda(args.gpu)
+                    char_h = char_h.cuda(args.gpu)
 
-            kwargs['char_p'] = char_p
-            kwargs['char_h'] = char_h
+                kwargs['char_p'] = char_p
+                kwargs['char_h'] = char_h
 
-        pred = model(**kwargs)
+            pred = model(**kwargs)
 
-        if(i%3==0):
-            optimizer.zero_grad()
-        batch_loss = criterion(pred, batch.label.view(pred.shape[0],-1).float())
-        loss += batch_loss.item()
-        batch_loss.backward()
-        if(i%3==0):
-            optimizer.step()
+            if(i%3==0):
+                optimizer.zero_grad()
+            batch_loss = criterion(pred, batch.label.view(pred.shape[0],-1).float())
+            loss += batch_loss.item()
+            batch_loss.backward()
+            if(i%3==0):
+                optimizer.step()
 
-        if i % args.print_freq == 0:
-            dev_loss, dev_acc = test(model, args, data, mode='dev')
-            test_loss, test_acc = test(model, args, data)
-            c = (i + 1) // args.print_freq
+            if i % args.print_freq == 0:
+                dev_loss, dev_acc = test(model, args, data, mode='dev')
+                test_loss, test_acc = test(model, args, data)
+                c = (i + 1) // args.print_freq
 
-            writer.add_scalar('loss/train', loss, c)
-            writer.add_scalar('loss/dev', dev_loss, c)
-            writer.add_scalar('acc/dev', dev_acc, c)
-            writer.add_scalar('loss/test', test_loss, c)
-            writer.add_scalar('acc/test', test_acc, c)
+                writer.add_scalar('loss/train', loss, c)
+                writer.add_scalar('loss/dev', dev_loss, c)
+                writer.add_scalar('acc/dev', dev_acc, c)
+                writer.add_scalar('loss/test', test_loss, c)
+                writer.add_scalar('acc/test', test_acc, c)
 
-            print(f'train loss: {loss:.3f} / dev loss: {dev_loss:.3f} / test loss: {test_loss:.3f}'
-                  f' / dev acc: {dev_acc:.3f} / test acc: {test_acc:.3f}')
+                print(f'train loss: {loss:.3f} / dev loss: {dev_loss:.3f} / test loss: {test_loss:.3f}'
+                      f' / dev acc: {dev_acc:.3f} / test acc: {test_acc:.3f}')
 
-            if dev_acc > max_dev_acc:
                 max_dev_acc = dev_acc
                 max_test_acc = test_acc
                 best_model = copy.deepcopy(model)
+                if not os.path.exists('saved_models'):
+                    os.makedirs('saved_models')
+                torch.save(best_model.state_dict(), f'saved_models/BIBPM_{args.data_type}_{args.model_time}.pt')
 
-            loss = 0
-            model.train()
+                loss = 0
+                model.train()
 
     writer.close()
     print(f'max dev acc: {max_dev_acc:.3f} / max test acc: {max_test_acc:.3f}')
@@ -109,7 +111,7 @@ def main():
     parser.add_argument('--char-hidden-size', default=80, type=int)
     parser.add_argument('--data-type', default='SemEval', help='available: SNLI or Quora')
     parser.add_argument('--dropout', default=0.1, type=float)
-    parser.add_argument('--epoch', default=200, type=int)
+    parser.add_argument('--epoch', default=20, type=int)
     parser.add_argument('--gpu', default=0, type=int)
     parser.add_argument('--hidden-size', default=100, type=int)
     parser.add_argument('--learning-rate', default=0.001, type=float)
@@ -118,7 +120,7 @@ def main():
     parser.add_argument('--num-perspective', default=20, type=int)
     parser.add_argument('--print-freq', default=600, type=int)
     parser.add_argument('--use-char-emb', default=False, action='store_true')
-    parser.add_argument('--word-dim', default=300, type=int)
+    parser.add_argument('--word-dim', default=100, type=int)
     args = parser.parse_args()
 
     if args.data_type == 'SNLI':

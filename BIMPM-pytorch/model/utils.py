@@ -128,7 +128,7 @@ class SemEval():
                     ('q2', self.TEXT),
                     ('id', self.RAW)])
 
-        self.TEXT.build_vocab(self.train, self.dev, self.test, vectors=GloVe(name='840B', dim=300))
+        self.TEXT.build_vocab(self.train, self.dev, self.test, vectors=GloVe(name='twitter.27B', dim=100))
         self.LABEL.build_vocab(self.train)
 
         sort_key = lambda x: data.interleave_keys(len(x.q1), len(x.q2))
