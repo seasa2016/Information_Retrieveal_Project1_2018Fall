@@ -11,6 +11,7 @@ import torch.optim as optim
 import torch.nn as nn
 
 from model.simple_rnn import simple_rnn
+from model.qa_lstm import qa_lstm
 
 torch.set_printoptions(threshold=1000)
 
@@ -31,6 +32,7 @@ def get_data(batch_size):
 	'./data/semeval/training_data/SemEval2015-Task3-CQA-QL-test-reformatted-excluding-2016-questions-cleansed.xml',
 	'./data/semeval/training_data/SemEval2015-Task3-CQA-QL-train-reformatted-excluding-2016-questions-cleansed.xml',
 	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-dev.xml',
+	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-test.xml',
 	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-train-part1.xml',
 	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-train-part2.xml'
 	]
@@ -74,7 +76,14 @@ def train(args):
 	dataloader,length = get_data(args.batch_size)
 	print(length)
 	print("setting model")
-	model = simple_rnn(args)
+
+	if(args.model == 'simple_rnn'):
+		model = simple_rnn(args)
+	elif(args.model == 'qa_lstm'):
+		model = qa_lstm(args)
+	elif(args.model == 'bimpm'):
+		model = bimpm(args)
+
 	model = model.to(device=device)
 
 	print(model)
@@ -196,10 +205,10 @@ def train(args):
 							Loss['class']/length['valid']/2,Loss['rank']/length['valid'],Count['class'],length['valid']*2,Count['rank'],length['valid']))
 		
 		
-		torch.save(model.state_dict(), './saved_models/{0}/step_{1}.pkl'.format(args.model_time,now))
+		torch.save(model.state_dict(), './saved_models/{0}/step_{1}.pkl'.format(args.save,now))
 
 		if(Loss['class']<loss_best):
-			torch.save(model.state_dict(), './saved_models/{0}/best.pkl'.format(args.model_time))
+			torch.save(model.state_dict(), './saved_models/{0}/best.pkl'.format(args.save))
 			loss_best = Loss['class']
 
 def main():
@@ -215,22 +224,23 @@ def main():
 	parser.add_argument('--num_layer', default=2, type=int)
 
 	parser.add_argument('--learning_rate', default=0.005, type=float)
-	parser.add_argument('--model', default="simple_rnn", type=str)
+	parser.add_argument('--model', default="qa_lstm", type=str)
 
 	parser.add_argument('--print_freq', default=1, type=int)
 
+	parser.add_argument('--save', required=True , type=str)
+	
 	args = parser.parse_args()
 
 	setattr(args, 'input_size', 49526+1)
 	setattr(args,'batch_first',True)
 	setattr(args, 'class_size',1)
-	setattr(args, 'model_time', strftime('%H:%M:%S', gmtime()))
 
 	if not os.path.exists('saved_models'):
 		os.makedirs('saved_models')
 
-	if not os.path.exists('./saved_models/{0}'.format(args.model_time)):
-		os.makedirs('./saved_models/{0}'.format(args.model_time))
+	if not os.path.exists('./saved_models/{0}'.format(args.save)):
+		os.makedirs('./saved_models/{0}'.format(args.save))
 
 	print('training start!')
 	train(args)
