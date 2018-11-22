@@ -22,39 +22,39 @@ class data_preprocessing:
             tree = ET.parse(file)
             root = tree.getroot()
             
-            Task_dict = {}
-
-            RELQ_ID = []
-            RelQSubject = []
-            RelQBody = []
-            RELC_IDs = []
-            RELC_RELEVANCE2RELQs = []
-            RelCTexts = []
-            ORGQ_ID = []
-            OrgQSubject = []
-            OrgQBody = []
-            RELQ_RELEVANCE2ORGQ = []
             
-            for question in root:        
+            for question in root:     
+                Task_dict = {}
+
+                RELQ_ID = []
+                RelQSubject = []
+                RelQBody = []
+                RELC_IDs = []
+                RELC_RELEVANCE2RELQs = []
+                RelCTexts = []
+                ORGQ_ID = []
+                OrgQSubject = []
+                OrgQBody = []
+                RELQ_RELEVANCE2ORGQ = []   
                 # Relevant question ID - A, B
                 if question.find('Thread') != None:
                     quest = question.find('Thread') # condition command cause of different types of xml files in 2015 and 2016  
-                RelQuestion = quest.find('RelQuestion')
-                RELQ_ID.append(RelQuestion.attrib['RELQ_ID'])
-                
-                # Relevant question body - A, B
-                RelQSubject.append(RelQuestion.find('RelQSubject').text)
-                RelQBody.append(RelQuestion.find('RelQBody').text)
-                
-                # Relevant comments IDs - A, C       
-                RelComments = quest.findall('RelComment')
-                RELC_IDs.extend([RelComment.attrib['RELC_ID'] for RelComment in RelComments]) # Ten IDs
-                
-                # Relevance between question and comments - A, C    
-                RELC_RELEVANCE2RELQs.extend([RelComment.attrib['RELC_RELEVANCE2RELQ'] for RelComment in RelComments]) # Ten Evaluations
-                
-                # Relevant comments - A, C
-                RelCTexts.extend([RelComment.find('RelCText').text for RelComment in RelComments]) # Ten Comments' texts
+                    RelQuestion = quest.find('RelQuestion')
+                    RELQ_ID.append(RelQuestion.attrib['RELQ_ID'])
+                    
+                    # Relevant question body - A, B
+                    RelQSubject.append(RelQuestion.find('RelQSubject').text)
+                    RelQBody.append(RelQuestion.find('RelQBody').text)
+                    
+                    # Relevant comments IDs - A, C       
+                    RelComments = quest.findall('RelComment')
+                    RELC_IDs.extend([RelComment.attrib['RELC_ID'] for RelComment in RelComments]) # Ten IDs
+                    
+                    # Relevance between question and comments - A, C    
+                    RELC_RELEVANCE2RELQs.extend([RelComment.attrib['RELC_RELEVANCE2RELQ'] for RelComment in RelComments]) # Ten Evaluations
+                    
+                    # Relevant comments - A, C
+                    RelCTexts.extend([RelComment.find('RelCText').text for RelComment in RelComments]) # Ten Comments' texts
                 
                 if self.task != 'task_A':
                     # Original Question ID - B, C
@@ -67,39 +67,39 @@ class data_preprocessing:
                     # Relevance between question and question - B
                     RELQ_RELEVANCE2ORGQ.append(question.find('Thread').find('RelQuestion').attrib['RELQ_RELEVANCE2ORGQ'])
                 
-            if self.task == 'task_A':
-                Task_dict['RELQ_ID'] = np.repeat(RELQ_ID, int(len(RELC_IDs) / len(RELQ_ID)))
-                Task_dict['RelQSubject'] = np.repeat(RelQSubject, int(len(RELC_IDs) / len(RELQ_ID)))
-                Task_dict['RelQBody'] = np.repeat(RelQBody, int(len(RELC_IDs) / len(RELQ_ID)))
-                Task_dict['RELC_ID'] = RELC_IDs
-                Task_dict['RELC_RELEVANCE2RELQ'] = RELC_RELEVANCE2RELQs
-                Task_dict['RelCText'] = RelCTexts
+                if self.task == 'task_A':
+                    Task_dict['RELQ_ID'] = np.repeat(RELQ_ID, int(len(RELC_IDs) / len(RELQ_ID)))
+                    Task_dict['RelQSubject'] = np.repeat(RelQSubject, int(len(RELC_IDs) / len(RELQ_ID)))
+                    Task_dict['RelQBody'] = np.repeat(RelQBody, int(len(RELC_IDs) / len(RELQ_ID)))
+                    Task_dict['RELC_ID'] = RELC_IDs
+                    Task_dict['RELC_RELEVANCE2RELQ'] = RELC_RELEVANCE2RELQs
+                    Task_dict['RelCText'] = RelCTexts
+                    
+                    Task_df = pd.DataFrame.from_dict(Task_dict)
+                    Task_dfs.append(Task_df)
                 
-                Task_df = pd.DataFrame.from_dict(Task_dict)
-                Task_dfs.append(Task_df)
-            
-            elif self.task == 'task_B':
-                Task_dict['ORGQ_ID'] = ORGQ_ID
-                Task_dict['OrgQSubject'] = OrgQSubject
-                Task_dict['OrgQBody'] = OrgQBody
-                Task_dict['RELQ_ID'] = RELQ_ID
-                Task_dict['RelQSubject'] = RelQSubject
-                Task_dict['RelQBody'] = RelQBody
-                Task_dict['RELQ_RELEVANCE2ORGQ'] = RELQ_RELEVANCE2ORGQ
-                
-                Task_df = pd.DataFrame.from_dict(Task_dict)
-                Task_dfs.append(Task_df)
-                
-            else:
-                Task_dict['ORGQ_ID'] = np.repeat(ORGQ_ID, int(len(RELC_IDs) / len(ORGQ_ID)))
-                Task_dict['OrgQSubject'] = np.repeat(OrgQSubject, int(len(RELC_IDs) / len(ORGQ_ID)))
-                Task_dict['OrgQBody'] = np.repeat(OrgQBody, int(len(RELC_IDs) / len(ORGQ_ID)))
-                Task_dict['RELC_ID'] = RELC_IDs
-                Task_dict['RELC_RELEVANCE2RELQ'] = RELC_RELEVANCE2RELQs
-                Task_dict['RelCText'] = RelCTexts
-                
-                Task_df = pd.DataFrame.from_dict(Task_dict)
-                Task_dfs.append(Task_df)
+                elif self.task == 'task_B':
+                    Task_dict['ORGQ_ID'] = ORGQ_ID
+                    Task_dict['OrgQSubject'] = OrgQSubject
+                    Task_dict['OrgQBody'] = OrgQBody
+                    Task_dict['RELQ_ID'] = RELQ_ID
+                    Task_dict['RelQSubject'] = RelQSubject
+                    Task_dict['RelQBody'] = RelQBody
+                    Task_dict['RELQ_RELEVANCE2ORGQ'] = RELQ_RELEVANCE2ORGQ
+                    
+                    Task_df = pd.DataFrame.from_dict(Task_dict)
+                    Task_dfs.append(Task_df)
+                    
+                else:
+                    Task_dict['ORGQ_ID'] = np.repeat(ORGQ_ID, int(len(RELC_IDs) / len(ORGQ_ID)))
+                    Task_dict['OrgQSubject'] = np.repeat(OrgQSubject, int(len(RELC_IDs) / len(ORGQ_ID)))
+                    Task_dict['OrgQBody'] = np.repeat(OrgQBody, int(len(RELC_IDs) / len(ORGQ_ID)))
+                    Task_dict['RELC_ID'] = RELC_IDs
+                    Task_dict['RELC_RELEVANCE2RELQ'] = RELC_RELEVANCE2RELQs
+                    Task_dict['RelCText'] = RelCTexts
+                    
+                    Task_df = pd.DataFrame.from_dict(Task_dict)
+                    Task_dfs.append(Task_df)
             
         return Task_dfs
     
