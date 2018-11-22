@@ -2,7 +2,7 @@ from time import gmtime, strftime
 import os
 import argparse
 
-from data.dataloader import itemDataset,collate_fn,ToTensor
+from data.testloader import itemDataset,collate_fn,ToTensor
 from torch.utils.data import Dataset,DataLoader
 from torchvision import transforms, utils
 
@@ -16,47 +16,17 @@ from model.qa_lstm import qa_lstm
 torch.set_printoptions(threshold=1000)
 
 def get_data(batch_size):
-	"""
-	[
-	'./data/semeval/training_data/SemEval2015-Task3-CQA-QL-dev-reformatted-excluding-2016-questions-cleansed.xml',
-	'./data/semeval/training_data/SemEval2015-Task3-CQA-QL-test-reformatted-excluding-2016-questions-cleansed.xml',
-	'./data/semeval/training_data/SemEval2015-Task3-CQA-QL-train-reformatted-excluding-2016-questions-cleansed.xml',
-	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-dev.xml',
-	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-test.xml',
-	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-train-part1.xml',
-	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-train-part2.xml'
-	]
-	"""
-	train_file = [
-	'./data/semeval/training_data/SemEval2015-Task3-CQA-QL-dev-reformatted-excluding-2016-questions-cleansed.xml',
-	'./data/semeval/training_data/SemEval2015-Task3-CQA-QL-test-reformatted-excluding-2016-questions-cleansed.xml',
-	'./data/semeval/training_data/SemEval2015-Task3-CQA-QL-train-reformatted-excluding-2016-questions-cleansed.xml',
-	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-dev.xml',
-	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-test.xml',
-	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-train-part1.xml',
-	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-train-part2.xml'
-	]
 	test_file = [
 		'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-test.xml'
 	]
 
-	train_dataset = itemDataset( file_name=train_file,vocab='./data/vocab',
-                                transform=transforms.Compose([ToTensor()]))
-	train_dataloader = DataLoader(train_dataset, batch_size=batch_size,shuffle=True, num_workers=16,collate_fn=collate_fn)
-
-	valid_dataset = itemDataset( file_name=test_file,vocab='./data/vocab',
+	test_dataset = itemDataset( file_name=test_file,vocab='./data/vocab',
 								transform=transforms.Compose([ToTensor()]))
-	valid_dataloader = DataLoader(valid_dataset, batch_size=batch_size,shuffle=False, num_workers=16,collate_fn=collate_fn)
+	test_dataloader = DataLoader(test_dataset, batch_size=batch_size,shuffle=False, num_workers=16,collate_fn=collate_fn)
     
-	dataloader = {}
-	dataloader['train'] = train_dataloader
-	dataloader['valid'] = valid_dataloader
-
-	length = {}
-	length['train'] = len(train_dataset)
-	length['valid'] = len(valid_dataset)
-
-	return dataloader,length
+	length = len(test_dataloader)
+	
+	return test_dataloader,length
 
 def convert(data,device):
 	for name in data:
