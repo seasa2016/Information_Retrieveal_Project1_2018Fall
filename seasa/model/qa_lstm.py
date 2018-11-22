@@ -6,11 +6,11 @@ class Encoder(nn.Module):
     def __init__(self,args):
         super(Encoder,self).__init__()
 
-        self.input_size = args.input_size,
-        self.hidden_size = args.hidden_size,
-        self.num_layers = args.num_layers,
-        self.batch_first = args.batch_first,
-        self.dropout = args.dropout,
+        self.input_size=args.input_size,
+        self.hidden_size=args.hidden_size,
+        self.num_layers=args.num_layers,
+        self.batch_first=args.batch_first,
+        self.dropout=args.dropout,
 
 
         self.word_embedding = nn.Embedding(args.input_size,args.word_dim)
@@ -52,25 +52,24 @@ class Encoder(nn.Module):
             """
             answer_output: batch*sentence*feat_len
             query_output:  batch*sentence*feat_len
-
-
-            for simple rnn, we just take the output from 
             """
-            if( self.batch_first == False ):
+            query_length = query_length.view(-1,1)
+            if(self.batch_first):
+                query_output = query_output.sum(dim=1)
+            else:
+                query_output = query_output.sum(dim=0)
                 answer_output = answer_output.transpose(0,1) 
-                query_output = query_output.transpose(0,1) 
+            query_normal = query_output.div(query_length).div(query_length.sqrt()).unsqueeze(2)        # batch*feat_len*1
 
-            query_output = [torch.cat([ query_output[i][ query_length[i]-1 ][:self.hidden_size] , 
-                                        query_output[i][0][self.hidden_size:]] , dim=-1 ) for i in range(query_length)]
-            query_output = torch.stack(query_output,dim=0)
+            #get the attention
+            attn_weight = answer_output.bmm(query_normal).squeeze(2)         #batch*sentence*1
+            #perform mask for the padding data
+            attn_weight[mask] = 1e-8
+            attn_weight = attn_weight.softmax(dim=-1)       #batch*sentence*1
 
-            answer_output = [torch.cat([ answer_output[i][ answer_length[i]-1 ][:self.hidden_size] , 
-                                        answer_output[i][0][self.hidden_size:]] , dim=-1 ) for i in range(answer_length)]
-            answer_output = torch.stack(answer_output,dim=0)
+            answer_extract = (query_output.transpose(1,2)).bmm(attn_weight).squeeze(2)
 
-
-
-            return query_output,answer_output
+            return query_output,answer_extract
         
         #first check for the mask ans the embedding
         mask =  query.eq(0)
@@ -117,9 +116,9 @@ class Dncoder(nn.Module):
         return out
 
 
-class simple_rnn(nn.Module):
+class qa_lstm(nn.Module):
     def __init__(self,args):
-        super(simple_rnn,self).__init__()
+        super(qa_lstm,self).__init__()
 
         self.encoder = Encoder(args)
         self.decoder = Dncoder(args)
