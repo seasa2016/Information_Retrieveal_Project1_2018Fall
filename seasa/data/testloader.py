@@ -9,8 +9,8 @@ import torch
 import pandas as pd
 import sys
 
-#from data import parser
-import parser
+from data import parser
+#import parser
 
 import re
 import string
@@ -64,6 +64,10 @@ class itemDataset(Dataset):
 			temp['query_ID'] = data["ID"][:-5]
 			temp['query'] = remove(data['Subject']) + remove(data['Body'])
 			temp['query_len'] = len(temp['query'])
+			if(temp['query_len'] == 0):
+				temp['query'].append(0)
+				temp['query_len'] += 1
+
 		
 			if(task == 'taskA'):
 				if("Comment" in data):
@@ -74,6 +78,9 @@ class itemDataset(Dataset):
 						
 						temp['answer'] = text
 						temp['answer_len'] = len(text)
+						if(temp['answer_len'] == 0):
+							temp['answer'].append(0)
+							temp['answer_len'] += 1
 		
 						self.data.append(temp.copy())
 
@@ -87,10 +94,27 @@ class itemDataset(Dataset):
 
 						temp['answer'] = text
 						temp['answer_len'] = len(text)
+						if(temp['answer_len'] == 0):
+							temp['answer'].append(0)
+							temp['answer_len'] += 1
 							
 						self.data.append(temp.copy())
+			elif(task == 'taskC'):				
+				for thread in data["Thread"]:
+					for comment in thread["Comment"]:
+						text = remove(comment["Text"])
+					
+						temp['answer_ID'] = comment["ID"]
+					
+						temp['answer'] = text
+						temp['answer_len'] = len(text)
+						if(temp['answer_len'] == 0):
+							temp['answer'].append(0)
+							temp['answer_len'] += 1
+		
+						self.data.append(temp.copy())
 			else:
-				pass
+				raise ValueError('qq')
 					
 	def __len__(self):
 		return len(self.data)
@@ -141,7 +165,7 @@ def collate_fn(data):
 
 if(__name__ == '__main__'):
 	print('QQQ')
-	dataset = itemDataset( file_name='./../../data/test_data/SemEval2017-task3-English-test-input.xml',vocab='./vocab',task='taskA',transform=transforms.Compose([ToTensor()]))
+	dataset = itemDataset( file_name='./../../data/test_data/SemEval2017-task3-English-test-input.xml',vocab='./vocab',task='taskC',transform=transforms.Compose([ToTensor()]))
 
 	dataloader = DataLoader(dataset, batch_size=2,shuffle=True, num_workers=1,collate_fn=collate_fn)
 	for i,data in enumerate(dataloader):

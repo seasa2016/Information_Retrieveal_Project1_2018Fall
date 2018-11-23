@@ -15,13 +15,13 @@ from model.qa_lstm import qa_lstm
 
 torch.set_printoptions(threshold=1000)
 
-def get_data(batch_size):
+def get_data(batch_size,task):
 	test_file = [
-		'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-test.xml'
+		'./data/semeval/test_data/SemEval2017-task3-English-test-input.xml'
 	]
 
 	test_dataset = itemDataset( file_name=test_file,
-							vocab='./vocab',task='taskA',transform=transforms.Compose([ToTensor()]))
+							vocab='./data/vocab',task=task,transform=transforms.Compose([ToTensor()]))
 	test_dataloader = DataLoader(test_dataset, batch_size=batch_size,shuffle=False, num_workers=16,collate_fn=collate_fn)
     
 	length = len(test_dataloader)
@@ -45,7 +45,7 @@ def test(args):
 		print('the device is in cpu')
 
 	print("loading data")
-	dataloader,length = get_data(args.batch_size)
+	dataloader,length = get_data(args.batch_size,args.task)
 	print(length)
 	print("setting model")
 
@@ -56,18 +56,17 @@ def test(args):
 	elif(args.model == 'bimpm'):
 		model = bimpm(args)
 
-	model.load_state_dict(torch.load(args.load)
+	model.load_state_dict(torch.load(args.load))
 
 	model = model.to(device=device)
 
 	print(model)
 	
-	print("start training")
+	print("start testing")
 		
-	with open(args.output,'w') as f:
+	with open('./result/'+args.output,'w') as f:
 		model.eval()
-		for i,data in enumerate(dataloader):
-			#print(i)
+		for j,data in enumerate(dataloader):
 			with torch.no_grad():
 				#first convert the data into cuda
 				data = convert(data,device)
@@ -78,9 +77,10 @@ def test(args):
 				ans = (out_left.sigmoid()>0.5).detach().cpu()
 				
 				for i in range(out_left.shape[0]):
-					f.write('{0}\t{1}\t{2}\t{3}\t{4}'.format(
-						data['answer_ID'][i],data['query_ID'][i],i,out_left[i],ans[i]
+					f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(
+						data['query_ID'][i],data['answer_ID'][i],i,out_left[i].item(),'true' if(ans[i].item()==1) else 'false'
 					))
+			print(j)
 
 def main():
 	parser = argparse.ArgumentParser()
@@ -96,14 +96,15 @@ def main():
 	parser.add_argument('--learning_rate', default=0.005, type=float)
 	parser.add_argument('--model', default="qa_lstm", type=str)
 
-	parser.add_argument('--output', required=True , type=str)
 	parser.add_argument('--load', required=True , type=str)
+	parser.add_argument('--task', required=True , type=str)
 	
 	args = parser.parse_args()
 
 	setattr(args, 'input_size', 49526+1)
 	setattr(args,'batch_first',True)
 	setattr(args, 'class_size',1)
+	setattr(args, 'output','{0}_{1}'.format(args.model,args.task))
 	
 	print('testing start!')
 	test(args)
