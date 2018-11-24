@@ -3,9 +3,41 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+class Decoder(nn.Module):
+	def __init__(self,args):
+		super(Decoder,self).__init__()
+		self.linear1 = nn.Linear(4*args.hidden_dim,args.hidden_dim)
+		self.linear2 = nn.Linear(args.hidden_dim,1)
+
+		self.act = nn.Tanh()
+		self.output_act = nn.Sigmoid()
+	def forward(self,x):
+		"""
+			here I will simply use two layer feedforward
+		"""
+		out = self.linear1(x)
+		out = self.act(out)
+
+		out = self.linear2(out)
+		out = self.output_act(out)
+		
+		return out
+
 class BIMPM(nn.Module):
-    def __init__(self, args, data):
-        super(BIMPM, self).__init__()
+	def __init__(self,args):
+		super(BIMPM,self).__init__()
+		self.encoder = Encoder(args)
+		self.decoder = Decoder(args)
+	
+	def forward(self):
+		"""
+			I will not use this partXDD
+		"""
+		pass
+
+class Encoder(nn.Module):
+    def __init__(self, args):
+        super(Encoder, self).__init__()
 
         self.args = args
         self.d = self.args.word_dim + int(self.args.use_char_emb) * self.args.char_hidden_size
@@ -14,11 +46,7 @@ class BIMPM(nn.Module):
         # ----- Word Representation Layer -----
         self.char_emb = nn.Embedding(args.char_vocab_size, args.char_dim, padding_idx=0)
 
-        self.word_emb = nn.Embedding(args.word_vocab_size, args.word_dim)
-        # initialize word embedding with GloVe
-        self.word_emb.weight.data.copy_(data.TEXT.vocab.vectors)
-        # no fine-tuning for word vectors
-        self.word_emb.weight.requires_grad = False
+        self.word_emb = nn.Embedding(args.word_vocab_size, args.word_dim, padding_idx=0)
 
         self.char_LSTM = nn.LSTM(
             input_size=self.args.char_dim,
@@ -29,12 +57,13 @@ class BIMPM(nn.Module):
 
         # ----- Context Representation Layer -----
         self.context_LSTM = nn.LSTM(
-            input_size=self.d,
-            hidden_size=self.args.hidden_size,
-            num_layers=1,
-            bidirectional=True,
-            batch_first=True
-        )
+			input_size=args.word_dim,
+			hidden_size=args.hidden_dim,
+			num_layers=args.num_layer,
+			batch_first=args.batch_first,
+			dropout=args.dropout,
+			bidirectional=True
+		)
 
         # ----- Matching Layer -----
         for i in range(1, 9):
@@ -44,18 +73,16 @@ class BIMPM(nn.Module):
         # ----- Aggregation Layer -----
         self.aggregation_LSTM = nn.LSTM(
             input_size=self.l * 8,
-            hidden_size=self.args.hidden_size,
-            num_layers=1,
-            bidirectional=True,
-            batch_first=True
-        )
+			hidden_size=args.hidden_dim,
+			num_layers=args.num_layer,
+			batch_first=args.batch_first,
+			dropout=args.dropout,
+			bidirectional=True
+		)
 
-        # ----- Prediction Layer -----
-        self.pred_fc1 = nn.Linear(self.args.hidden_size * 4, self.args.hidden_size * 2)
-        self.pred_fc2 = nn.Linear(self.args.hidden_size * 2, self.args.class_size)
 
         self.reset_parameters()
-
+        
     def reset_parameters(self):
         # ----- Word Representation Layer -----
         nn.init.uniform_(self.char_emb.weight, -0.005, 0.005)
@@ -107,7 +134,33 @@ class BIMPM(nn.Module):
     def dropout(self, v):
         return F.dropout(v, p=self.args.dropout, training=self.training)
 
-    def forward(self, **kwargs):
+    def forward(self,query,query_len,answer,answer_len):
+        def pack(seq,seq_length):
+            sorted_seq_lengths, indices = torch.sort(seq_length, descending=True)
+            _, desorted_indices = torch.sort(indices, descending=False)
+
+            if self.batch_first:
+                seq = seq[indices]
+            else:
+                seq = seq[:, indices]
+            packed_inputs = nn.utils.rnn.pack_padded_sequence(seq,
+                                                            sorted_seq_lengths.cpu().numpy(),
+                                                            batch_first=self.batch_first)
+
+            return packed_inputs,desorted_indices
+
+        def unpack(res, state,desorted_indices):
+            padded_res,_ = nn.utils.rnn.pad_packed_sequence(res, batch_first=self.batch_first)
+
+            state = [ _[:,desorted_indices] for _ in state ] 
+
+            if(self.batch_first):
+                desorted_res = padded_res[desorted_indices]
+            else:
+                desorted_res = padded_res[:, desorted_indices]
+
+            return desorted_res,state
+
         # ----- Matching Layer -----
         def mp_matching_func(v1, v2, w):
             """
@@ -132,8 +185,10 @@ class BIMPM(nn.Module):
 
             return m
 
-        def mp_matching_func_pairwise(v1, v2, w):
+        def mp_matching_func_pairwise(v1, v2, w,mask):
             """
+            this is for the attention
+
             :param v1: (batch, seq_len1, hidden_size)
             :param v2: (batch, seq_len2, hidden_size)
             :param w: (l, hidden_size)
@@ -153,10 +208,13 @@ class BIMPM(nn.Module):
 
             # (batch, seq_len1, seq_len2, l)
             m = div_with_small_value(n, d).permute(0, 2, 3, 1)
+			
+            final_mask = torch.matmul(mask['query'],mask['answer'])
+            m[final_mask,:] = -1e8
 
             return m
 
-        def attention(v1, v2):
+        def attention(v1, v2,mask):
             """
             :param v1: (batch, seq_len1, hidden_size)
             :param v2: (batch, seq_len2, hidden_size)
@@ -172,7 +230,12 @@ class BIMPM(nn.Module):
             a = torch.bmm(v1, v2.permute(0, 2, 1))
             d = v1_norm * v2_norm
 
-            return div_with_small_value(a, d)
+            m = div_with_small_value(a, d)
+			
+            final_mask = torch.matmul(mask['query'],mask['answer'])
+            m[final_mask,:] = 1e-8
+
+            return m
 
         def div_with_small_value(n, d, eps=1e-8):
             # too small values are replaced by 1e-8 to prevent it from exploding.
@@ -182,8 +245,12 @@ class BIMPM(nn.Module):
         # ----- Word Representation Layer -----
         # (batch, seq_len) -> (batch, seq_len, word_dim)
 
-        p = self.word_emb(kwargs['p'])
-        h = self.word_emb(kwargs['h'])
+        mask = {}
+        mask['query'] =  query.eq(0)
+        mask['answer'] =  answer.eq(0)
+
+        query = self.word_emb(query)
+        answer = self.word_emb(answer)
 
         if self.args.use_char_emb:
             # (batch, seq_len, max_word_len) -> (batch * seq_len, max_word_len)
@@ -205,113 +272,126 @@ class BIMPM(nn.Module):
             p = torch.cat([p, char_p], dim=-1)
             h = torch.cat([h, char_h], dim=-1)
 
-        p = self.dropout(p)
-        h = self.dropout(h)
+        query = self.dropout(query)
+        answer = self.dropout(answer)
 
         # ----- Context Representation Layer -----
         # (batch, seq_len, hidden_size * 2)
-        con_p, _ = self.context_LSTM(p)
-        con_h, _ = self.context_LSTM(h)
+        packed_inputs,desorted_indices = pack(query,query_len)
+        res, state = self.context_LSTM(packed_inputs)
+        query_res,_ = unpack(res, state,desorted_indices)
 
-        con_p = self.dropout(con_p)
-        con_h = self.dropout(con_h)
+        packed_inputs,desorted_indices = pack(answer,answer_len)
+        res, state = self.context_LSTM(packed_inputs)
+        answer_res,_ = unpack(res, state,desorted_indices)
+
+        query_res = self.dropout(query_res)
+        answer_res = self.dropout(answer_res)
 
         # (batch, seq_len, hidden_size)
-        con_p_fw, con_p_bw = torch.split(con_p, self.args.hidden_size, dim=-1)
-        con_h_fw, con_h_bw = torch.split(con_h, self.args.hidden_size, dim=-1)
+        query_fw, query_bw = torch.split(query_res, self.args.hidden_size, dim=-1)
+        answer_fw, answer_bw = torch.split(answer_res, self.args.hidden_size, dim=-1)
 
         # 1. Full-Matching
 
         # (batch, seq_len, hidden_size), (batch, hidden_size)
         # -> (batch, seq_len, l)
-        mv_p_full_fw = mp_matching_func(con_p_fw, con_h_fw[:, -1, :], self.mp_w1)
-        mv_p_full_bw = mp_matching_func(con_p_bw, con_h_bw[:,  0, :], self.mp_w2)
-        mv_h_full_fw = mp_matching_func(con_h_fw, con_p_fw[:, -1, :], self.mp_w1)
-        mv_h_full_bw = mp_matching_func(con_h_bw, con_p_bw[:,  0, :], self.mp_w2)
+        query_full_fw = mp_matching_func(query_fw, answer_fw[ torch.tensor(list( range( answer_len.shape[0] ) )).view(-1,1) , answer_len.view(-1,1)-1 , :], self.mp_w1)
+        query_full_bw = mp_matching_func(query_bw, answer_bw[:,  0, :], self.mp_w2)
+        answer_full_fw = mp_matching_func(answer_fw, query_fw[ torch.tensor(list( range( query_len.shape[0] ) )).view(-1,1) , query_len.view(-1,1)-1 , :], self.mp_w1)
+        answer_full_bw = mp_matching_func(answer_bw, query_bw[:,  0, :], self.mp_w2)
 
         # 2. Maxpooling-Matching
-
         # (batch, seq_len1, seq_len2, l)
-        mv_max_fw = mp_matching_func_pairwise(con_p_fw, con_h_fw, self.mp_w3)
-        mv_max_bw = mp_matching_func_pairwise(con_p_bw, con_h_bw, self.mp_w4)
+        mv_max_fw = mp_matching_func_pairwise(query_fw, answer_fw, self.mp_w3,mask)
+        mv_max_bw = mp_matching_func_pairwise(query_bw, answer_bw, self.mp_w4,mask)
 
         # (batch, seq_len, l)
-        mv_p_max_fw, _ = mv_max_fw.max(dim=2)
-        mv_p_max_bw, _ = mv_max_bw.max(dim=2)
-        mv_h_max_fw, _ = mv_max_fw.max(dim=1)
-        mv_h_max_bw, _ = mv_max_bw.max(dim=1)
+        query_max_fw, _ = mv_max_fw.max(dim=2)
+        query_max_bw, _ = mv_max_bw.max(dim=2)
+        answer_max_fw, _ = mv_max_fw.max(dim=1)
+        answer_max_bw, _ = mv_max_bw.max(dim=1)
 
         # 3. Attentive-Matching
 
         # (batch, seq_len1, seq_len2)
-        att_fw = attention(con_p_fw, con_h_fw)
-        att_bw = attention(con_p_bw, con_h_bw)
+        att_fw = attention(query_fw, answer_fw,mask)
+        att_bw = attention(query_bw, answer_bw,mask)
 
         # (batch, seq_len2, hidden_size) -> (batch, 1, seq_len2, hidden_size)
         # (batch, seq_len1, seq_len2) -> (batch, seq_len1, seq_len2, 1)
         # -> (batch, seq_len1, seq_len2, hidden_size)
-        att_h_fw = con_h_fw.unsqueeze(1) * att_fw.unsqueeze(3)
-        att_h_bw = con_h_bw.unsqueeze(1) * att_bw.unsqueeze(3)
+        answer_fw = answer_fw.unsqueeze(1) * att_fw.unsqueeze(3)
+        answer_bw = answer_bw.unsqueeze(1) * att_bw.unsqueeze(3)
         # (batch, seq_len1, hidden_size) -> (batch, seq_len1, 1, hidden_size)
         # (batch, seq_len1, seq_len2) -> (batch, seq_len1, seq_len2, 1)
         # -> (batch, seq_len1, seq_len2, hidden_size)
-        att_p_fw = con_p_fw.unsqueeze(2) * att_fw.unsqueeze(3)
-        att_p_bw = con_p_bw.unsqueeze(2) * att_bw.unsqueeze(3)
+        query_fw = query_fw.unsqueeze(2) * att_fw.unsqueeze(3)
+        query_bw = query_bw.unsqueeze(2) * att_bw.unsqueeze(3)
 
         # (batch, seq_len1, hidden_size) / (batch, seq_len1, 1) -> (batch, seq_len1, hidden_size)
-        att_mean_h_fw = div_with_small_value(att_h_fw.sum(dim=2), att_fw.sum(dim=2, keepdim=True))
-        att_mean_h_bw = div_with_small_value(att_h_bw.sum(dim=2), att_bw.sum(dim=2, keepdim=True))
+        answer_mean_fw = div_with_small_value(answer_fw.sum(dim=2), att_fw.sum(dim=2, keepdim=True))
+        answer_mean_bw = div_with_small_value(answer_bw.sum(dim=2), att_bw.sum(dim=2, keepdim=True))
 
         # (batch, seq_len2, hidden_size) / (batch, seq_len2, 1) -> (batch, seq_len2, hidden_size)
-        att_mean_p_fw = div_with_small_value(att_p_fw.sum(dim=1), att_fw.sum(dim=1, keepdim=True).permute(0, 2, 1))
-        att_mean_p_bw = div_with_small_value(att_p_bw.sum(dim=1), att_bw.sum(dim=1, keepdim=True).permute(0, 2, 1))
+        query_mean_fw = div_with_small_value(query_fw.sum(dim=1), att_fw.sum(dim=1, keepdim=True).permute(0, 2, 1))
+        query_mean_bw = div_with_small_value(query_bw.sum(dim=1), att_bw.sum(dim=1, keepdim=True).permute(0, 2, 1))
 
         # (batch, seq_len, l)
-        mv_p_att_mean_fw = mp_matching_func(con_p_fw, att_mean_h_fw, self.mp_w5)
-        mv_p_att_mean_bw = mp_matching_func(con_p_bw, att_mean_h_bw, self.mp_w6)
-        mv_h_att_mean_fw = mp_matching_func(con_h_fw, att_mean_p_fw, self.mp_w5)
-        mv_h_att_mean_bw = mp_matching_func(con_h_bw, att_mean_p_bw, self.mp_w6)
+        query_att_mean_fw = mp_matching_func(query_fw, answer_mean_fw, self.mp_w5)
+        query_att_mean_bw = mp_matching_func(query_bw, answer_mean_bw, self.mp_w6)
+        answer_att_mean_fw = mp_matching_func(answer_fw, query_mean_fw, self.mp_w5)
+        answer_att_mean_bw = mp_matching_func(answer_bw, query_mean_bw, self.mp_w6)
 
         # 4. Max-Attentive-Matching
 
         # (batch, seq_len1, hidden_size)
-        att_max_h_fw, _ = att_h_fw.max(dim=2)
-        att_max_h_bw, _ = att_h_bw.max(dim=2)
+        answer_fw[mask['answer'],:] = 0
+        answer_bw[mask['answer'],:] = 0
+        query_fw[mask['query'],:] = 0
+        query_bw[mask['query'],:] = 0
+
+        answer_max_fw, _ = answer_fw.max(dim=2)
+        answer_max_bw, _ = answer_bw.max(dim=2)
         # (batch, seq_len2, hidden_size)
-        att_max_p_fw, _ = att_p_fw.max(dim=1)
-        att_max_p_bw, _ = att_p_bw.max(dim=1)
+        query_max_fw, _ = query_fw.max(dim=1)
+        query_max_bw, _ = query_bw.max(dim=1)
 
         # (batch, seq_len, l)
-        mv_p_att_max_fw = mp_matching_func(con_p_fw, att_max_h_fw, self.mp_w7)
-        mv_p_att_max_bw = mp_matching_func(con_p_bw, att_max_h_bw, self.mp_w8)
-        mv_h_att_max_fw = mp_matching_func(con_h_fw, att_max_p_fw, self.mp_w7)
-        mv_h_att_max_bw = mp_matching_func(con_h_bw, att_max_p_bw, self.mp_w8)
+        query_att_max_fw = mp_matching_func(query_fw, answer_max_fw, self.mp_w7)
+        query_att_max_bw = mp_matching_func(query_bw, answer_max_bw, self.mp_w8)
+        answer_att_max_fw = mp_matching_func(answer_fw, query_max_fw, self.mp_w7)
+        answer_att_max_bw = mp_matching_func(answer_bw, query_max_bw, self.mp_w8)
 
         # (batch, seq_len, l * 8)
-        mv_p = torch.cat(
-            [mv_p_full_fw, mv_p_max_fw, mv_p_att_mean_fw, mv_p_att_max_fw,
-             mv_p_full_bw, mv_p_max_bw, mv_p_att_mean_bw, mv_p_att_max_bw], dim=2)
-        mv_h = torch.cat(
-            [mv_h_full_fw, mv_h_max_fw, mv_h_att_mean_fw, mv_h_att_max_fw,
-             mv_h_full_bw, mv_h_max_bw, mv_h_att_mean_bw, mv_h_att_max_bw], dim=2)
+        query = torch.cat(
+            [query_full_fw, query_max_fw, query_att_mean_fw, query_att_max_fw,
+                query_full_bw, query_max_bw, query_att_mean_bw, query_att_max_bw], dim=2)
+        answer = torch.cat(
+            [answer_full_fw, answer_max_fw, answer_att_mean_fw, answer_att_max_fw,
+                answer_full_bw, answer_max_bw, answer_att_mean_bw, answer_att_max_bw], dim=2)
 
-        mv_p = self.dropout(mv_p)
-        mv_h = self.dropout(mv_h)
+        query = self.dropout(query)
+        answer = self.dropout(answer)
 
         # ----- Aggregation Layer -----
         # (batch, seq_len, l * 8) -> (2, batch, hidden_size)
-        _, (agg_p_last, _) = self.aggregation_LSTM(mv_p)
-        _, (agg_h_last, _) = self.aggregation_LSTM(mv_h)
+
+
+        packed_inputs,desorted_indices = pack(query,query_len)
+        res, state = self.aggregation_LSTM(packed_inputs)
+        query_res,(agg_query_last, _) = unpack(res, state,desorted_indices)
+
+        packed_inputs,desorted_indices = pack(answer,answer_len)
+        res, state = self.aggregation_LSTM(packed_inputs)
+        answer_res,(agg_answer_last, _) = unpack(res, state,desorted_indices)
+
 
         # 2 * (2, batch, hidden_size) -> 2 * (batch, hidden_size * 2) -> (batch, hidden_size * 4)
         x = torch.cat(
-            [agg_p_last.permute(1, 0, 2).contiguous().view(-1, self.args.hidden_size * 2),
-             agg_h_last.permute(1, 0, 2).contiguous().view(-1, self.args.hidden_size * 2)], dim=1)
+            [agg_query_last.permute(1, 0, 2).contiguous().view(-1, self.args.hidden_size * 2),
+                agg_answer_last.permute(1, 0, 2).contiguous().view(-1, self.args.hidden_size * 2)], dim=1)
         x = self.dropout(x)
 
-        # ----- Prediction Layer -----
-        x = torch.tanh(self.pred_fc1(x))
-        x = self.dropout(x)
-        x = self.pred_fc2(x)
 
         return x
