@@ -70,7 +70,7 @@ class Encoder(nn.Module):
 			else:
 				query_output = query_output.sum(dim=0)
 				answer_output = answer_output.transpose(0,1) 
-			query_normal = query_output.div(query_length).div(query_length.sqrt()).unsqueeze(2)		# batch*feat_len*1
+			query_normal = query_output.div(query_length).div(self.hidden_dim.sqrt()).unsqueeze(2)		# batch*feat_len*1
 
 			#get the attention
 			attn_weight = answer_output.bmm(query_normal).squeeze(2)		 #batch*sentence*1
