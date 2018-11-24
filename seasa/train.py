@@ -13,6 +13,7 @@ import torch.nn as nn
 from model.simple_rnn import simple_rnn
 from model.qa_lstm import qa_lstm
 from model.bimpm import bimpm
+from model.two import two
 
 torch.set_printoptions(threshold=1000)
 
@@ -84,6 +85,8 @@ def train(args):
 		model = qa_lstm(args)
 	elif(args.model == 'bimpm'):
 		model = bimpm(args)
+	elif(args.model == 'two'):
+		model = two(args)
 
 	model = model.to(device=device)
 
@@ -217,7 +220,7 @@ def train(args):
 def main():
 	parser = argparse.ArgumentParser()
 
-	parser.add_argument('--batch_size', default=50, type=int)
+	parser.add_argument('--batch_size', default=1024, type=int)
 	parser.add_argument('--dropout', default=0, type=float)
 	parser.add_argument('--epoch', default=200, type=int)
 	parser.add_argument('--gpu', default=0, type=int)

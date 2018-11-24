@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as f
+import math
 
 class Encoder(nn.Module):
 	def __init__(self,args):
@@ -70,7 +71,7 @@ class Encoder(nn.Module):
 			else:
 				query_output = query_output.sum(dim=0)
 				answer_output = answer_output.transpose(0,1) 
-			query_normal = query_output.div(query_length).div(self.hidden_dim.sqrt()).unsqueeze(2)		# batch*feat_len*1
+			query_normal = query_output.div(query_length).div(math.sqrt(float(self.hidden_dim))).unsqueeze(2)		# batch*feat_len*1
 
 			#get the attention
 			attn_weight = answer_output.bmm(query_normal).squeeze(2)		 #batch*sentence*1
@@ -80,7 +81,7 @@ class Encoder(nn.Module):
 
 			answer_extract = (answer_output.transpose(1,2)).bmm(attn_weight).squeeze(2)
 
-			return query_normal,answer_extract
+			return query_normal.squeeze(2),answer_extract
 		
 		#first check for the mask ans the embedding
 		mask =  answer.eq(0)
