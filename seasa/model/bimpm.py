@@ -307,27 +307,27 @@ class Encoder(nn.Module):
 		# (batch, seq_len2, hidden_size) -> (batch, 1, seq_len2, hidden_size)
 		# (batch, seq_len1, seq_len2) -> (batch, seq_len1, seq_len2, 1)
 		# -> (batch, seq_len1, seq_len2, hidden_size)
-		answer_fw = answer_fw.unsqueeze(1) * att_fw.unsqueeze(3)
-		answer_bw = answer_bw.unsqueeze(1) * att_bw.unsqueeze(3)
+		attn_answer_fw = answer_fw.unsqueeze(1) * att_fw.unsqueeze(3)
+		attn_answer_bw = answer_bw.unsqueeze(1) * att_bw.unsqueeze(3)
 		# (batch, seq_len1, hidden_size) -> (batch, seq_len1, 1, hidden_size)
 		# (batch, seq_len1, seq_len2) -> (batch, seq_len1, seq_len2, 1)
 		# -> (batch, seq_len1, seq_len2, hidden_size)
-		query_fw = query_fw.unsqueeze(2) * att_fw.unsqueeze(3)
-		query_bw = query_bw.unsqueeze(2) * att_bw.unsqueeze(3)
+		attn_query_fw = query_fw.unsqueeze(2) * att_fw.unsqueeze(3)
+		attn_query_bw = query_bw.unsqueeze(2) * att_bw.unsqueeze(3)
 
 		# (batch, seq_len1, hidden_size) / (batch, seq_len1, 1) -> (batch, seq_len1, hidden_size)
-		answer_mean_fw = div_with_small_value(answer_fw.sum(dim=2), att_fw.sum(dim=2, keepdim=True))
-		answer_mean_bw = div_with_small_value(answer_bw.sum(dim=2), att_bw.sum(dim=2, keepdim=True))
+		attn_answer_mean_fw = div_with_small_value(attn_answer_fw.sum(dim=2), att_fw.sum(dim=2, keepdim=True))
+		attn_answer_mean_bw = div_with_small_value(attn_answer_bw.sum(dim=2), att_bw.sum(dim=2, keepdim=True))
 
 		# (batch, seq_len2, hidden_size) / (batch, seq_len2, 1) -> (batch, seq_len2, hidden_size)
-		query_mean_fw = div_with_small_value(query_fw.sum(dim=1), att_fw.sum(dim=1, keepdim=True).permute(0, 2, 1))
-		query_mean_bw = div_with_small_value(query_bw.sum(dim=1), att_bw.sum(dim=1, keepdim=True).permute(0, 2, 1))
+		attn_query_mean_fw = div_with_small_value(attn_query_fw.sum(dim=1), att_fw.sum(dim=1, keepdim=True).permute(0, 2, 1))
+		attn_query_mean_bw = div_with_small_value(attn_query_bw.sum(dim=1), att_bw.sum(dim=1, keepdim=True).permute(0, 2, 1))
 
 		# (batch, seq_len, l)
-		query_att_mean_fw = mp_matching_func(query_fw, answer_mean_fw, self.mp_w5)
-		query_att_mean_bw = mp_matching_func(query_bw, answer_mean_bw, self.mp_w6)
-		answer_att_mean_fw = mp_matching_func(answer_fw, query_mean_fw, self.mp_w5)
-		answer_att_mean_bw = mp_matching_func(answer_bw, query_mean_bw, self.mp_w6)
+		query_att_mean_fw = mp_matching_func(query_fw, attn_answer_mean_fw, self.mp_w5)
+		query_att_mean_bw = mp_matching_func(query_bw, attn_answer_mean_bw, self.mp_w6)
+		answer_att_mean_fw = mp_matching_func(answer_fw, attn_query_mean_fw, self.mp_w5)
+		answer_att_mean_bw = mp_matching_func(answer_bw, attn_query_mean_bw, self.mp_w6)
 
 		# 4. Max-Attentive-Matching
 
@@ -337,11 +337,11 @@ class Encoder(nn.Module):
 		query_fw[mask['query'],:] = 0
 		query_bw[mask['query'],:] = 0
 
-		answer_max_fw, _ = answer_fw.max(dim=2)
-		answer_max_bw, _ = answer_bw.max(dim=2)
+		answer_max_fw, _ = attn_answer_fw.max(dim=2)
+		answer_max_bw, _ = attn_answer_bw.max(dim=2)
 		# (batch, seq_len2, hidden_size)
-		query_max_fw, _ = query_fw.max(dim=1)
-		query_max_bw, _ = query_bw.max(dim=1)
+		query_max_fw, _ = attn_query_fw.max(dim=1)
+		query_max_bw, _ = attn_query_bw.max(dim=1)
 
 		# (batch, seq_len, l)
 		query_att_max_fw = mp_matching_func(query_fw, answer_max_fw, self.mp_w7)
