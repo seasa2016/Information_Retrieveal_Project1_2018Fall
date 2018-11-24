@@ -25,6 +25,8 @@ class Encoder(nn.Module):
 			dropout=args.dropout,
 			bidirectional=True
 		)
+
+		self.dropout = nn.Dropout(p=0.5)
 	def forward(self,query,query_len,answer,answer_len):
 		def pack(seq,seq_length):
 			sorted_seq_lengths, indices = torch.sort(seq_length, descending=True)

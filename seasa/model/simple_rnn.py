@@ -22,6 +22,8 @@ class Encoder(nn.Module):
 			dropout=args.dropout,
 			bidirectional=True
 		)
+
+		self.dropout = nn.Dropout(0.5)
 	def forward(self,query,query_len,answer,answer_len):
 		def pack(seq,seq_length):
 			sorted_seq_lengths, indices = torch.sort(seq_length, descending=True)
@@ -74,6 +76,7 @@ class Encoder(nn.Module):
 			return query_output,answer_output
 		
 		#first check for the mask ans the embedding
+		
 		mask =  query.eq(0)
 
 		query_emb = self.word_embedding(query)

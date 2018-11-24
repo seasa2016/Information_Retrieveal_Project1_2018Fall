@@ -133,7 +133,7 @@ def train(args):
 			
 			temp_Loss['class'] += loss.detach().cpu().item()
 			Loss['class'] += loss.detach().cpu().item()
-
+			
 			#deal with the ranking part
 			out = out_left-out_right
 			pred = (out.gt(0).int())==data['total_type'].int()
@@ -146,7 +146,7 @@ def train(args):
 			
 			temp_Loss['rank'] = loss.detach().cpu().item()
 			Loss['rank'] += loss.detach().cpu().item()
-			
+
 			loss.backward()
 			
 			optimizer.step()
@@ -196,7 +196,7 @@ def train(args):
 				
 				loss = criterion(out,data['total_type']) 
 				Count['rank'] +=  (out.gt(1e-5).int()==data['total_type'].int()).sum()
-
+				
 				Loss['rank'] += loss.detach().cpu().item()
 
 		if(now%args.print_freq==0):
