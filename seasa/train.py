@@ -30,6 +30,12 @@ def get_data(batch_size):
 	"""
 	train_file = [
 	'./data/semeval/training_data/SemEval2015-Task3-CQA-QL-dev-reformatted-excluding-2016-questions-cleansed.xml',
+	'./data/semeval/training_data/SemEval2015-Task3-CQA-QL-test-reformatted-excluding-2016-questions-cleansed.xml',
+	'./data/semeval/training_data/SemEval2015-Task3-CQA-QL-train-reformatted-excluding-2016-questions-cleansed.xml',
+	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-dev.xml',
+	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-test.xml',
+	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-train-part1.xml',
+	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-train-part2.xml'
 	]
 	test_file = [
 		'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-test.xml'
@@ -96,9 +102,9 @@ def train(args):
 		temp_Count = {'class':0,'rank':0}
 
 		model.train()
+		model.zero_grad()
 		for i,data in enumerate(dataloader['train']):
 			#print(i)
-			model.zero_grad()
 
 			#first convert the data into cuda
 			data = convert(data,device)
@@ -142,13 +148,15 @@ def train(args):
 			temp_Loss['rank'] = loss.detach().cpu().item()
 			Loss['rank'] += loss.detach().cpu().item()
 
-			loss.backward()
+			loss.backward(retain_graph=True)
 			
 			optimizer.step()
-			if(i%20==0):
+			model.zero_grad()
+
+			if(i%40==0):
 				#print('out',out_right.sigmoid().view(-1))
 				#print('label',data['right_type'].view(-1))
-				print(i,' training loss(class):{0} loss(rank):{1} acc:{2}/{3} {4}/{5}'.format(temp_Loss['class'],temp_Loss['rank'],temp_Count['class'],args.batch_size*40,temp_Count['rank'],args.batch_size*20))
+				print(i,' training loss(class):{0} loss(rank):{1} acc:{2}/{3} {4}/{5}'.format(temp_Loss['class'],temp_Loss['rank'],temp_Count['class'],args.batch_size*80,temp_Count['rank'],args.batch_size*40))
 
 				temp_Loss = {'class':0,'rank':0}
 				temp_Count = {'class':0,'rank':0}
@@ -209,7 +217,7 @@ def train(args):
 def main():
 	parser = argparse.ArgumentParser()
 
-	parser.add_argument('--batch_size', default=64, type=int)
+	parser.add_argument('--batch_size', default=50, type=int)
 	parser.add_argument('--dropout', default=0, type=float)
 	parser.add_argument('--epoch', default=200, type=int)
 	parser.add_argument('--gpu', default=0, type=int)
@@ -219,7 +227,7 @@ def main():
 	parser.add_argument('--char_vocab_size', default=26, type=int)
 	parser.add_argument('--hidden_dim', default=64, type=int)
 	parser.add_argument('--char_hidden_dim', default=64, type=int)
-	parser.add_argument('--num_layer', default=2, type=int)
+	parser.add_argument('--num_layer', default=1, type=int)
 
 	parser.add_argument('--learning_rate', default=0.005, type=float)
 	parser.add_argument('--model', default="qa_lstm", type=str)

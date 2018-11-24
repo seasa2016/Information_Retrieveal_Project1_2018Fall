@@ -26,7 +26,7 @@ class Decoder(nn.Module):
 class bimpm(nn.Module):
 	def __init__(self,args):
 		super(bimpm,self).__init__()
-		self.encoder = Encoder(args)
+		self.encoder = nn.DataParallel(Encoder(args))
 		self.decoder = Decoder(args)
 	
 	def forward(self):
@@ -141,7 +141,25 @@ class Encoder(nn.Module):
 				desorted_res = padded_res[:, desorted_indices]
 
 			return desorted_res,state
-
+		def feat_extract(query_output,query_length,answer_output,answer_length,mask):
+			"""
+			answer_output: batch*sentence*feat_len
+			query_output:  batch*sentence*feat_len
+			for simple rnn, we just take the output from 
+			"""
+			if( self.batch_first == False ):
+				answer_output = answer_output.transpose(0,1) 
+				query_output = query_output.transpose(0,1) 
+			
+			query_output = [torch.cat([ query_output[i][ query_length[i]-1 ][:self.args.hidden_dim] , query_output[i][0][self.args.hidden_dim:]] , dim=-1 ) for i in range(query_length.shape[0])]
+										
+			query_output = torch.stack(query_output,dim=0)
+																																														
+			answer_output = [torch.cat([ answer_output[i][ answer_length[i]-1 ][:self.args.hidden_dim] , answer_output[i][0][self.args.hidden_dim:]] , dim=-1 ) for i in range(answer_length.shape[0])]
+			answer_output = torch.stack(answer_output,dim=0)
+		
+			return query_output,answer_output
+		
 		# ----- Matching Layer -----
 		def mp_matching_func(v1, v2, w):
 			"""
@@ -155,7 +173,6 @@ class Encoder(nn.Module):
 			# (1, 1, hidden_size, l)
 			w = w.transpose(1, 0).unsqueeze(0).unsqueeze(0)
 			# (batch, seq_len, hidden_size, l)
-			print('w',w.shape,'v1',v1.shape)
 			v1 = w * torch.stack([v1] * self.l, dim=3)
 			if(len(v2.shape) == 3):
 				v2 = w * torch.stack([v2] * self.l, dim=3)
@@ -191,10 +208,10 @@ class Encoder(nn.Module):
 			# (batch, seq_len1, seq_len2, l)
 			m = div_with_small_value(n, d).permute(0, 2, 3, 1)
 			
-			final_mask = torch.matmul(mask['query'].float().transpose(0,1),mask['answer'].float())
-			final_mask = final_mask>0.5
+			#final_mask = torch.matmul(mask['query'].float().transpose(0,1),mask['answer'].float())
+			#final_mask = final_mask>0.5
 
-			m[:,final_mask,:] = 0
+			#m[:,final_mask,:] = 0
 
 			return m
 
@@ -216,10 +233,10 @@ class Encoder(nn.Module):
 
 			m = div_with_small_value(a, d)
 			
-			final_mask = torch.matmul(mask['query'].transpose(0,1).float(),mask['answer'].float())
-			final_mask = final_mask>0.5
+			#final_mask = torch.matmul(mask['query'].transpose(0,1).float(),mask['answer'].float())
+			#final_mask = final_mask>0.5
 
-			m[:,final_mask] = 0
+			#m[:,final_mask] = 0
 
 			return m
 
@@ -332,22 +349,23 @@ class Encoder(nn.Module):
 		# 4. Max-Attentive-Matching
 
 		# (batch, seq_len1, hidden_size)
-		answer_fw[mask['answer'],:] = 0
-		answer_bw[mask['answer'],:] = 0
-		query_fw[mask['query'],:] = 0
-		query_bw[mask['query'],:] = 0
+		#answer_fw[mask['answer'],:] = 0
+		#answer_bw[mask['answer'],:] = 0
+		#query_fw[mask['query'],:] = 0
+		#query_bw[mask['query'],:] = 0
 
-		answer_max_fw, _ = attn_answer_fw.max(dim=2)
-		answer_max_bw, _ = attn_answer_bw.max(dim=2)
+		attn_answer_max_fw, _ = attn_answer_fw.max(dim=2)
+		attn_answer_max_bw, _ = attn_answer_bw.max(dim=2)
 		# (batch, seq_len2, hidden_size)
-		query_max_fw, _ = attn_query_fw.max(dim=1)
-		query_max_bw, _ = attn_query_bw.max(dim=1)
+		attn_query_max_fw, _ = attn_query_fw.max(dim=1)
+		attn_query_max_bw, _ = attn_query_bw.max(dim=1)
 
 		# (batch, seq_len, l)
-		query_att_max_fw = mp_matching_func(query_fw, answer_max_fw, self.mp_w7)
-		query_att_max_bw = mp_matching_func(query_bw, answer_max_bw, self.mp_w8)
-		answer_att_max_fw = mp_matching_func(answer_fw, query_max_fw, self.mp_w7)
-		answer_att_max_bw = mp_matching_func(answer_bw, query_max_bw, self.mp_w8)
+		query_att_max_fw = mp_matching_func(query_fw, attn_answer_max_fw, self.mp_w7)
+		query_att_max_bw = mp_matching_func(query_bw, attn_answer_max_bw, self.mp_w8)
+		answer_att_max_fw = mp_matching_func(answer_fw, attn_query_max_fw, self.mp_w7)
+		answer_att_max_bw = mp_matching_func(answer_bw, attn_query_max_bw, self.mp_w8)
+
 
 		# (batch, seq_len, l * 8)
 		query = torch.cat(
@@ -373,11 +391,9 @@ class Encoder(nn.Module):
 		answer_res,(agg_answer_last, _) = unpack(res, state,desorted_indices)
 
 
+		query_result,answer_result = feat_extract(query_res,query_len.int(),answer_res,answer_len.int(),mask)
+		total_output = torch.cat([query_result,answer_result],dim=-1)
 		# 2 * (2, batch, hidden_size) -> 2 * (batch, hidden_size * 2) -> (batch, hidden_size * 4)
-		x = torch.cat(
-			[agg_query_last.permute(1, 0, 2).contiguous().view(-1, self.args.hidden_size * 2),
-				agg_answer_last.permute(1, 0, 2).contiguous().view(-1, self.args.hidden_size * 2)], dim=1)
-		x = self.dropout(x)
 
 
-		return x
+		return total_output
