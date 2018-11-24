@@ -12,6 +12,7 @@ import torch.nn as nn
 
 from model.simple_rnn import simple_rnn
 from model.qa_lstm import qa_lstm
+from model.bimpm import bimpm
 
 torch.set_printoptions(threshold=1000)
 
@@ -29,12 +30,6 @@ def get_data(batch_size):
 	"""
 	train_file = [
 	'./data/semeval/training_data/SemEval2015-Task3-CQA-QL-dev-reformatted-excluding-2016-questions-cleansed.xml',
-	'./data/semeval/training_data/SemEval2015-Task3-CQA-QL-test-reformatted-excluding-2016-questions-cleansed.xml',
-	'./data/semeval/training_data/SemEval2015-Task3-CQA-QL-train-reformatted-excluding-2016-questions-cleansed.xml',
-	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-dev.xml',
-	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-test.xml',
-	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-train-part1.xml',
-	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-train-part2.xml'
 	]
 	test_file = [
 		'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-test.xml'
@@ -214,13 +209,16 @@ def train(args):
 def main():
 	parser = argparse.ArgumentParser()
 
-	parser.add_argument('--batch_size', default=1024, type=int)
+	parser.add_argument('--batch_size', default=64, type=int)
 	parser.add_argument('--dropout', default=0, type=float)
 	parser.add_argument('--epoch', default=200, type=int)
 	parser.add_argument('--gpu', default=0, type=int)
 	
 	parser.add_argument('--word_dim', default=64, type=int)
+	parser.add_argument('--char_dim', default=64, type=int)
+	parser.add_argument('--char_vocab_size', default=26, type=int)
 	parser.add_argument('--hidden_dim', default=64, type=int)
+	parser.add_argument('--char_hidden_dim', default=64, type=int)
 	parser.add_argument('--num_layer', default=2, type=int)
 
 	parser.add_argument('--learning_rate', default=0.005, type=float)
@@ -234,6 +232,7 @@ def main():
 
 	setattr(args, 'input_size', 49526+1)
 	setattr(args,'batch_first',True)
+	setattr(args,'use_char_emb',False)
 	setattr(args, 'class_size',1)
 
 	if not os.path.exists('saved_models'):
