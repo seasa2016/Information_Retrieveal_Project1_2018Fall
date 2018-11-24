@@ -80,7 +80,7 @@ class Encoder(nn.Module):
 
 			answer_extract = (answer_output.transpose(1,2)).bmm(attn_weight).squeeze(2)
 
-			return query_output,answer_extract
+			return query_normal,answer_extract
 		
 		#first check for the mask ans the embedding
 		mask =  answer.eq(0)
