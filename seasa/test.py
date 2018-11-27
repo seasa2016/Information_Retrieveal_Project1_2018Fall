@@ -35,7 +35,7 @@ def convert(data,device):
 		data[name] = data[name].to(device)
 	return data
 
-def test(args):
+def test(args,model_para):
 	print("check device")
 	if(torch.cuda.is_available() and args.gpu>=0):
 		device = torch.device('cuda')
@@ -56,7 +56,7 @@ def test(args):
 	elif(args.model == 'bimpm'):
 		model = bimpm(args)
 
-	model.load_state_dict(torch.load(args.load))
+	model.load_state_dict(model_para)
 
 	model = model.to(device=device)
 
@@ -85,29 +85,17 @@ def test(args):
 def main():
 	parser = argparse.ArgumentParser()
 
-	parser.add_argument('--batch_size', default=1024, type=int)
-	parser.add_argument('--dropout', default=0, type=float)
-	parser.add_argument('--gpu', default=0, type=int)
-	
-	parser.add_argument('--word_dim', default=64, type=int)
-	parser.add_argument('--hidden_dim', default=64, type=int)
-	parser.add_argument('--num_layer', default=2, type=int)
-
-	parser.add_argument('--learning_rate', default=0.005, type=float)
-	parser.add_argument('--model', default="qa_lstm", type=str)
-
 	parser.add_argument('--load', required=True , type=str)
 	parser.add_argument('--task', required=True , type=str)
-	
-	args = parser.parse_args()
+	ori_args = parser.parse_args()
+	setattr(ori_args, 'output','{0}_{1}'.format(args.model,args.task))
 
-	setattr(args, 'input_size', 49526+1)
-	setattr(args,'batch_first',True)
-	setattr(args, 'class_size',1)
-	setattr(args, 'output','{0}_{1}'.format(args.model,args.task))
-	
+
+	checkpoint = torch.load(ori_args.load)
 	print('testing start!')
-	test(args)
+	
+	test(checkpoint['args'],checkpoint['model'])
+
 	print('testing finished!')
 	
 

@@ -12,6 +12,7 @@ import pandas as pd
 import sys
 
 from data import parser
+#import parser
 import sentencepiece as spm
 
 import re
@@ -28,8 +29,8 @@ class itemDataset(Dataset):
 		self.add_data(file_name,'taskA')
 		self.add_data(file_name,'taskB')
 		
-        self.sp = spm.SentencePieceProcessor()
-        self.sp.Load(vocab)
+		self.sp = spm.SentencePieceProcessor()
+		self.sp.Load(vocab)
 
 		self.transform = transform
 		
@@ -140,7 +141,7 @@ class itemDataset(Dataset):
 		for name in ['left_type','right_type','total_type']:
 			sample[name] = temp[name]
 		
-		for name in ['left','right','total']:
+		for name in ['left','right','query']:
 			sample[name] = self.sp.SampleEncodeAsIds( temp[name] , -1, 0.1)
 			sample['{0}_len'.format(name)] = len(sample[name])
 		
@@ -191,14 +192,15 @@ def collate_fn(data):
 
 if(__name__ == '__main__'):
 	print('QQQ')
-	dataset = itemDataset( file_name='./semeval/training_data/SemEval2016-Task3-CQA-QL-dev.xml',vocab='./vocab',
+	dataset = itemDataset( file_name='./semeval/training_data/SemEval2016-Task3-CQA-QL-dev.xml',vocab='./vocab.model',
 								transform=transforms.Compose([ToTensor()]))
 	
 	
-	dataloader = DataLoader(dataset, batch_size=16,shuffle=True, num_workers=1,collate_fn=collate_fn)
+	dataloader = DataLoader(dataset, batch_size=32,shuffle=True, num_workers=16,collate_fn=collate_fn)
 	
 	for i,data in enumerate(dataloader):
-		if(i==0):
-			print(data)
+		print(i)
+		#if(i==0):
+		#	print(data)
 	print('finish')
 	

@@ -2,7 +2,9 @@ from time import gmtime, strftime
 import os
 import argparse
 
-from data.dataloader import itemDataset,collate_fn,ToTensor
+#from data.dataloader import itemDataset,collate_fn,ToTensor
+from datapiece.dataloader import itemDataset,collate_fn,ToTensor
+
 from torch.utils.data import Dataset,DataLoader
 from torchvision import transforms, utils
 
@@ -42,11 +44,11 @@ def get_data(batch_size):
 		'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-test.xml'
 	]
 
-	train_dataset = itemDataset( file_name=train_file,vocab='./data/vocab',
+	train_dataset = itemDataset( file_name=train_file,vocab='./datapiece/vocab_4096.model',
                                 transform=transforms.Compose([ToTensor()]))
 	train_dataloader = DataLoader(train_dataset, batch_size=batch_size,shuffle=True, num_workers=16,collate_fn=collate_fn)
 
-	valid_dataset = itemDataset( file_name=test_file,vocab='./data/vocab',
+	valid_dataset = itemDataset( file_name=test_file,vocab='./datapiece/vocab_4096.model',
 								transform=transforms.Compose([ToTensor()]))
 	valid_dataloader = DataLoader(valid_dataset, batch_size=batch_size,shuffle=False, num_workers=16,collate_fn=collate_fn)
     
@@ -153,13 +155,14 @@ def train(args):
 
 			loss.backward(retain_graph=True)
 			
-			optimizer.step()
-			model.zero_grad()
+			if(i%16==0):
+				optimizer.step()
+				model.zero_grad()
 
-			if(i%40==0):
+			if(i%160==0):
 				#print('out',out_right.sigmoid().view(-1))
 				#print('label',data['right_type'].view(-1))
-				print(i,' training loss(class):{0} loss(rank):{1} acc:{2}/{3} {4}/{5}'.format(temp_Loss['class'],temp_Loss['rank'],temp_Count['class'],args.batch_size*80,temp_Count['rank'],args.batch_size*40))
+				print(i,' training loss(class):{0} loss(rank):{1} acc:{2}/{3} {4}/{5}'.format(temp_Loss['class'],temp_Loss['rank'],temp_Count['class'],args.batch_size*320,temp_Count['rank'],args.batch_size*160))
 
 				temp_Loss = {'class':0,'rank':0}
 				temp_Count = {'class':0,'rank':0}
@@ -210,27 +213,30 @@ def train(args):
 			print(i,' testing loss(class):{0} loss(rank):{1} acc:{2}/{3} {4}/{5}'.format(
 							Loss['class']/length['valid']/2,Loss['rank']/length['valid'],Count['class'],length['valid']*2,Count['rank'],length['valid']))
 		
-		
-		torch.save(model.state_dict(), './saved_models/{0}/step_{1}.pkl'.format(args.save,now))
+		check = {
+				'args':args,
+				'model':model.state_dict()
+				}
+		torch.save(check, './saved_models/{0}/step_{1}.pkl'.format(args.save,now))
 
 		if(Loss['class']<loss_best):
-			torch.save(model.state_dict(), './saved_models/{0}/best.pkl'.format(args.save))
+			torch.save(check, './saved_models/{0}/best.pkl'.format(args.save))
 			loss_best = Loss['class']
 
 def main():
 	parser = argparse.ArgumentParser()
 
-	parser.add_argument('--batch_size', default=1024, type=int)
+	parser.add_argument('--batch_size', default=64, type=int)
 	parser.add_argument('--dropout', default=0, type=float)
 	parser.add_argument('--epoch', default=200, type=int)
 	parser.add_argument('--gpu', default=0, type=int)
 	
-	parser.add_argument('--word_dim', default=64, type=int)
+	parser.add_argument('--word_dim', default=128, type=int)
 	parser.add_argument('--char_dim', default=64, type=int)
 	parser.add_argument('--char_vocab_size', default=26, type=int)
-	parser.add_argument('--hidden_dim', default=64, type=int)
+	parser.add_argument('--hidden_dim', default=128, type=int)
 	parser.add_argument('--char_hidden_dim', default=64, type=int)
-	parser.add_argument('--num_layer', default=1, type=int)
+	parser.add_argument('--num_layer', default=2, type=int)
 
 	parser.add_argument('--learning_rate', default=0.005, type=float)
 	parser.add_argument('--model', default="qa_lstm", type=str)
@@ -241,7 +247,7 @@ def main():
 	
 	args = parser.parse_args()
 
-	setattr(args, 'input_size', 49526+1)
+	setattr(args, 'input_size', 4096)
 	setattr(args,'batch_first',True)
 	setattr(args,'use_char_emb',False)
 	setattr(args, 'class_size',1)
