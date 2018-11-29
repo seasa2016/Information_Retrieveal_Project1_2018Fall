@@ -1,0 +1,96 @@
+TaskB - CNN
+
+Preprocessing...
+Words tokenization...
+Remove the stop words...
+Word2vec...
+Padding...
+Modeling...
+Training...
+Epoch 1/10 [1543472071.9225087]
+----------
+Training...
+train Loss: 0.0179 Acc: 56.0000%
+
+Validating...
+valid Loss: 0.1487 Acc: 57.0000%
+
+Epoch 2/10 [1543472097.8966038]
+----------
+Training...
+train Loss: 0.0180 Acc: 58.0000%
+
+Validating...
+valid Loss: 0.1243 Acc: 59.0000%
+
+Epoch 3/10 [1543472124.3516808]
+----------
+Training...
+train Loss: 0.0174 Acc: 59.0000%
+
+Validating...
+valid Loss: 0.1217 Acc: 62.0000%
+
+Epoch 4/10 [1543472150.8456945]
+----------
+Training...
+train Loss: 0.0186 Acc: 59.0000%
+
+Validating...
+valid Loss: 0.1225 Acc: 62.0000%
+
+Epoch 5/10 [1543472177.5501876]
+----------
+Training...
+train Loss: 0.0188 Acc: 61.0000%
+
+Validating...
+valid Loss: 0.1212 Acc: 61.0000%
+
+Epoch 6/10 [1543472204.3929465]
+----------
+Training...
+train Loss: 0.0186 Acc: 62.0000%
+
+Validating...
+valid Loss: 0.1240 Acc: 60.0000%
+
+Epoch 7/10 [1543472231.4169297]
+----------
+Training...
+train Loss: 0.0181 Acc: 63.0000%
+
+Validating...
+valid Loss: 0.1261 Acc: 59.0000%
+
+Epoch 8/10 [1543472259.3888278]
+----------
+Training...
+train Loss: 0.0188 Acc: 65.0000%
+
+Validating...
+valid Loss: 0.1316 Acc: 58.0000%
+
+Epoch 9/10 [1543472286.627735]
+----------
+Training...
+train Loss: 0.0199 Acc: 68.0000%
+
+Validating...
+valid Loss: 0.1315 Acc: 58.0000%
+
+Epoch 10/10 [1543472313.5993571]
+----------
+Training...
+train Loss: 0.0184 Acc: 69.0000%
+
+Validating...
+valid Loss: 0.1353 Acc: 59.0000%
+
+268.80248832702637
+Training Finished
+Loading model...
+
+Inference...
+Testing Fininshed
+[0.3474]

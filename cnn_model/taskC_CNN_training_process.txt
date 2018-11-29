@@ -1,0 +1,176 @@
+TaskB - cnn
+
+Preprocessing...
+Words tokenization...
+Remove the stop words...
+Word2vec...
+Padding...
+Modeling...
+Training...
+Epoch 1/20 [1543441255.8596263]
+----------
+Training...
+train Loss: 0.0263 Acc: 57.0000%
+
+Validating...
+valid Loss: 0.1295 Acc: 63.0000%
+
+Epoch 2/20 [1543441284.6599903]
+----------
+Training...
+train Loss: 0.0236 Acc: 63.0000%
+
+Validating...
+valid Loss: 0.1205 Acc: 63.0000%
+
+Epoch 3/20 [1543441313.4815216]
+----------
+Training...
+train Loss: 0.0255 Acc: 63.0000%
+
+Validating...
+valid Loss: 0.1203 Acc: 64.0000%
+
+Epoch 4/20 [1543441425.3523214]
+----------
+Training...
+train Loss: 0.0247 Acc: 62.0000%
+
+Validating...
+valid Loss: 0.1201 Acc: 64.0000%
+
+Epoch 5/20 [1543441760.3645773]
+----------
+Training...
+train Loss: 0.0238 Acc: 64.0000%
+
+Validating...
+valid Loss: 0.1203 Acc: 62.0000%
+
+Epoch 6/20 [1543441785.6283212]
+----------
+Training...
+train Loss: 0.0221 Acc: 63.0000%
+
+Validating...
+valid Loss: 0.1243 Acc: 64.0000%
+
+Epoch 7/20 [1543441811.303522]
+----------
+Training...
+train Loss: 0.0231 Acc: 64.0000%
+
+Validating...
+valid Loss: 0.1161 Acc: 63.0000%
+
+Epoch 8/20 [1543441837.324792]
+----------
+Training...
+train Loss: 0.0240 Acc: 64.0000%
+
+Validating...
+valid Loss: 0.1187 Acc: 64.0000%
+
+Epoch 9/20 [1543441862.443383]
+----------
+Training...
+train Loss: 0.0240 Acc: 64.0000%
+
+Validating...
+valid Loss: 0.1147 Acc: 65.0000%
+
+Epoch 10/20 [1543441887.962516]
+----------
+Training...
+train Loss: 0.0202 Acc: 63.0000%
+
+Validating...
+valid Loss: 0.1125 Acc: 65.0000%
+
+Epoch 11/20 [1543441914.625035]
+----------
+Training...
+train Loss: 0.0202 Acc: 64.0000%
+
+Validating...
+valid Loss: 0.1100 Acc: 63.0000%
+
+Epoch 12/20 [1543441940.0765932]
+----------
+Training...
+train Loss: 0.0198 Acc: 64.0000%
+
+Validating...
+valid Loss: 0.1110 Acc: 65.0000%
+
+Epoch 13/20 [1543441965.9449892]
+----------
+Training...
+train Loss: 0.0229 Acc: 65.0000%
+
+Validating...
+valid Loss: 0.1056 Acc: 64.0000%
+
+Epoch 14/20 [1543441991.4008322]
+----------
+Training...
+train Loss: 0.0161 Acc: 65.0000%
+
+Validating...
+valid Loss: 0.1064 Acc: 64.0000%
+
+Epoch 15/20 [1543442018.2956204]
+----------
+Training...
+train Loss: 0.0205 Acc: 65.0000%
+
+Validating...
+valid Loss: 0.1045 Acc: 65.0000%
+
+Epoch 16/20 [1543442044.4919875]
+----------
+Training...
+train Loss: 0.0202 Acc: 66.0000%
+
+Validating...
+valid Loss: 0.1030 Acc: 66.0000%
+
+Epoch 17/20 [1543442069.441436]
+----------
+Training...
+train Loss: 0.0210 Acc: 66.0000%
+
+Validating...
+valid Loss: 0.1023 Acc: 67.0000%
+
+Epoch 18/20 [1543442096.8955553]
+----------
+Training...
+train Loss: 0.0170 Acc: 67.0000%
+
+Validating...
+valid Loss: 0.1042 Acc: 68.0000%
+
+Epoch 19/20 [1543442122.4064531]
+----------
+Training...
+train Loss: 0.0166 Acc: 67.0000%
+
+Validating...
+valid Loss: 0.1028 Acc: 68.0000%
+
+Epoch 20/20 [1543442148.4695637]
+----------
+Training...
+train Loss: 0.0150 Acc: 67.0000%
+
+Validating...
+valid Loss: 0.1051 Acc: 68.0000%
+
+919.5569913387299
+Training Finished
+Loading model...
+
+Inference...
+Testing Fininshed
+
