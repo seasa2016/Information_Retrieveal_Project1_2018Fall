@@ -10,6 +10,7 @@ import pandas as pd
 import sys
 
 from data import parser
+#import parser
 import sentencepiece as spm
 
 import re
@@ -25,8 +26,8 @@ class itemDataset(Dataset):
 
 		self.add_data(file_name,task)
 		
-        self.sp = spm.SentencePieceProcessor()
-        self.sp.Load(vocab)
+		self.sp = spm.SentencePieceProcessor()
+		self.sp.Load(vocab)
 
 		self.transform = transform
 		
@@ -41,6 +42,7 @@ class itemDataset(Dataset):
 			
 			return line
 
+		dataloader = parser.parser(file_name,task,'test')
 
 		for data in dataloader.iterator():
 			temp = {}
@@ -85,8 +87,15 @@ class itemDataset(Dataset):
 		sample = {}
 
 		for name in ['query','answer']:
-			sample[name] = self.sp.SampleEncodeAsIds( temp[name] , -1, 0.1)
-			sample['{0}_len'.format(name)] = len(sample[name])
+			if(temp[name]==''):
+				sample[name] = [0]
+				sample['{0}_len'.format(name)] = len(sample[name])
+			else:
+				sample[name] = self.sp.SampleEncodeAsIds( temp[name] , -1, 0.1)
+				sample['{0}_len'.format(name)] = len(sample[name])
+	
+		for name in ['answer_ID','query_ID']:
+			sample[name] = temp[name]
 		
 		if self.transform:
 			sample = self.transform(sample)
@@ -96,7 +105,7 @@ class ToTensor(object):
 	def __call__(self,sample):
 		for name in ['query','answer','query_len','answer_len']:
 			sample[name] = torch.tensor(sample[name],dtype=torch.long)
-			
+
 		return sample
 
 def collate_fn(data):
@@ -104,6 +113,7 @@ def collate_fn(data):
 	parsing the data list into batch tensor
 	"""
 	output = dict()
+	#print(data)
 
 	for name in ['answer_ID','query_ID']:
 		output[name] = [ _[name] for _ in data]
@@ -132,11 +142,11 @@ def collate_fn(data):
 
 if(__name__ == '__main__'):
 	print('QQQ')
-	dataset = itemDataset( file_name='./semeval/training_data/SemEval2016-Task3-CQA-QL-dev.xml',vocab='./vocab',
+	dataset = itemDataset( file_name='./semeval/training_data/SemEval2016-Task3-CQA-QL-dev.xml',vocab='./vocab_4096.model',
 								transform=transforms.Compose([ToTensor()]))
 	
 	
-	dataloader = DataLoader(dataset, batch_size=16,shuffle=True, num_workers=1,collate_fn=collate_fn)
+	dataloader = DataLoader(dataset, batch_size=2,shuffle=True, num_workers=1,collate_fn=collate_fn)
 	
 	for i,data in enumerate(dataloader):
 		if(i==0):
