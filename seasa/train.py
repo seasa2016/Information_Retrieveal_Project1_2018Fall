@@ -2,8 +2,8 @@ from time import gmtime, strftime
 import os
 import argparse
 
-#from data.dataloader import itemDataset,collate_fn,ToTensor
-from datapiece.dataloader import itemDataset,collate_fn,ToTensor
+from data.dataloader import itemDataset,collate_fn,ToTensor
+#from datapiece.dataloader import itemDataset,collate_fn,ToTensor
 
 from torch.utils.data import Dataset,DataLoader
 from torchvision import transforms, utils
@@ -44,12 +44,12 @@ def get_data(batch_size):
 		'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-test.xml'
 	]
 
-	train_dataset = itemDataset( file_name=train_file,vocab='./datapiece/vocab_4096.model',
-                                transform=transforms.Compose([ToTensor()]))
+	#train_dataset = itemDataset( file_name=train_file,vocab='./datapiece/vocab_4096.model',transform=transforms.Compose([ToTensor()]))
+	train_dataset = itemDataset( file_name=train_file,vocab='./data/vocab',transform=transforms.Compose([ToTensor()]))
 	train_dataloader = DataLoader(train_dataset, batch_size=batch_size,shuffle=True, num_workers=16,collate_fn=collate_fn)
 
-	valid_dataset = itemDataset( file_name=test_file,vocab='./datapiece/vocab_4096.model',
-								transform=transforms.Compose([ToTensor()]))
+	#valid_dataset = itemDataset( file_name=test_file,vocab='./datapiece/vocab_4096.model',transform=transforms.Compose([ToTensor()]))
+	valid_dataset = itemDataset( file_name=test_file,vocab='./data/vocab',transform=transforms.Compose([ToTensor()]))
 	valid_dataloader = DataLoader(valid_dataset, batch_size=batch_size,shuffle=False, num_workers=16,collate_fn=collate_fn)
     
 	dataloader = {}
@@ -155,7 +155,7 @@ def train(args):
 
 			loss.backward(retain_graph=True)
 			
-			if(i%16==0):
+			if(i%4==0):
 				optimizer.step()
 				model.zero_grad()
 
@@ -226,7 +226,7 @@ def train(args):
 def main():
 	parser = argparse.ArgumentParser()
 
-	parser.add_argument('--batch_size', default=64, type=int)
+	parser.add_argument('--batch_size', default=256, type=int)
 	parser.add_argument('--dropout', default=0, type=float)
 	parser.add_argument('--epoch', default=200, type=int)
 	parser.add_argument('--gpu', default=0, type=int)
@@ -239,7 +239,7 @@ def main():
 	parser.add_argument('--num_layer', default=2, type=int)
 
 	parser.add_argument('--learning_rate', default=0.005, type=float)
-	parser.add_argument('--model', default="qa_lstm", type=str)
+	parser.add_argument('--model',required=True, type=str)
 
 	parser.add_argument('--print_freq', default=1, type=int)
 
@@ -247,7 +247,8 @@ def main():
 	
 	args = parser.parse_args()
 
-	setattr(args, 'input_size', 4096)
+	#setattr(args, 'input_size', 4096)
+	setattr(args, 'input_size', 49527)
 	setattr(args,'batch_first',True)
 	setattr(args,'use_char_emb',False)
 	setattr(args, 'class_size',1)

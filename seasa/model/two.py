@@ -91,10 +91,10 @@ class Encoder(nn.Module):
 				answer_output = answer_output.sum(dim=0)
 
 			query_normal = query_output.div(query_length).div(math.sqrt(float(self.hidden_dim)))
-			answer_output = query_output.div(answer_length).div(math.sqrt(float(self.hidden_dim)))
+			answer_normal = answer_output.div(answer_length).div(math.sqrt(float(self.hidden_dim)))
 
 
-			return query_output,query_normal
+			return query_normal,answer_normal
 
 		def attention(query_output,query_length,answer_output,answer_length,mask):
 			"""
