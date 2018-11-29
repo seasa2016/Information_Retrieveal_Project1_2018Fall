@@ -35,7 +35,6 @@ def load_data(task):   # e.g. task='A'
     
     return train_df, dev_df, test_2017
 
-### Choose the desired task ('A', 'B', 'C')
 task = 'A'
 #task = 'B
 #task = 'C'
@@ -174,9 +173,12 @@ def output_result(test_2017, X_test, task):
     if task=='B':
         df[0] = test_2017['ORGQ_ID']
         df[1] = test_2017['RELQ_ID']
-    else:
+    elif task=='A':
         df[0] = test_2017['RELQ_ID']
         df[1] = test_2017['RELC_ID']
+    else:
+        df[0] = test_2017['ORGQ_ID']
+        df[1] = test_2017['RELC_ID']      
     df[2] = [1] * len(test_2017)
     preds = malstm.predict([X_test['left'], X_test['right']], verbose=0)
     df[3] = preds
