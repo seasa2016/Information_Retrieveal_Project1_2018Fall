@@ -69,25 +69,30 @@ class parser:
 			#here extract from the sub comment
 			if('OrgQuestion' in out):
 				for _ in out['OrgQuestion']:
-
+					
+					cate = {}
 					if(mode == 'train'):
 						temp_op = { name:_[name] for name in ["ID","Subject","Body"]}
 						temp_op["ID"] = '{0}_{1}'.format(temp_op["ID"],year)
 						temp_op['Comment'] = []
+
 					
 					if("SubtaskA_Skip_Because_Same_As_RelQuestion_ID" not in _["Thread"]):
-						temp_rp = {name:_["Thread"][0]["RelQuestion"][name] for name in ["ID","CATEGORY","DATE","USERID","USERNAME","Subject","Body"]}
+						temp_rp = {name:_["Thread"][0]["RelQuestion"][name] for name in ["ID","CATEGORY","DATE","USERID","USERNAME","Subject","Body","RELEVANCE2ORGQ"]}
 						temp_rp["ID"] = '{0}_{1}'.format(temp_rp["ID"],year)
 						temp_rp['Comment'] = []
 					else:
 						temp_rp = None
 
 					for tt in _['Thread'][0]['Comment']:
+						tt["ID"] = '{0}_{1}'.format(tt["ID"],year)
+
 						if(mode == 'train'):
 							temp_op['Comment'].append({name:tt[name] for name in ["ID","DATE","USERID","USERNAME","RELEVANCE2ORGQ","Text"]})
 						if(temp_rp):
 							temp_rp['Comment'].append({name:tt[name] for name in ["ID","DATE","USERID","USERNAME","RELEVANCE2RELQ","Text"]})
 					
+
 					if(mode == 'train'):
 						try:
 							self.data[temp_op['ID']]['Comment'].extend(temp_op['Comment'])
@@ -97,12 +102,19 @@ class parser:
 							print(self.data[temp_op['ID']]['Comment'])
 							arr = []
 							arr[2]=2
+						if(temp_rp['RELEVANCE2ORGQ'] == 'PerfectMatch' or temp_rp['RELEVANCE2ORGQ'] == 'Relevant'):
+							try:
+								self.data[temp_op['ID']]['CATEGORY'] = '{0},{1}'.format(temp_op['CATEGORY'],temp_rp['CATEGORY'])
+							except KeyError:
+								self.data[temp_op['ID']]['CATEGORY'] = temp_rp['CATEGORY']
 
 
 					if(temp_rp is not None):
 						#print(temp_rp)
 						try:
 							self.data[temp_rp['ID']]['Comment'].extend(temp_rp['Comment'])
+
+
 						except KeyError:
 							self.data[temp_rp['ID']]  = temp_rp.copy()
 
@@ -134,6 +146,13 @@ class parser:
 						self.data[temp_op["ID"]]["RelQuestion"].extend(temp_op["RelQuestion"])
 					except KeyError:
 						self.data[temp_op["ID"]] = temp_op.copy()
+					
+					for temp_rp in temp_op["RelQuestion"]:
+						if(temp_rp['RELEVANCE2ORGQ'] == 'PerfectMatch' or temp_rp['RELEVANCE2ORGQ'] == 'Relevant'):
+							try:
+								self.data[temp_op['ID']]['CATEGORY'] = '{0},{1}'.format(temp_op['CATEGORY'],temp_rp['CATEGORY'])
+							except KeyError:
+								self.data[temp_op['ID']]['CATEGORY'] = temp_rp['CATEGORY']
 
 		#return the full data
 		elif(task == 'taskC'):
@@ -184,13 +203,8 @@ class parser:
 
 def main():
 	data= [
-		'./../../data/training_data/SemEval2015-Task3-CQA-QL-dev-reformatted-excluding-2016-questions-cleansed.xml',
-		'./../../data/training_data/SemEval2015-Task3-CQA-QL-test-reformatted-excluding-2016-questions-cleansed.xml',
-		'./../../data/training_data/SemEval2015-Task3-CQA-QL-train-reformatted-excluding-2016-questions-cleansed.xml',
-		'./../../data/training_data/SemEval2016-Task3-CQA-QL-dev.xml',
-		'./../../data/training_data/SemEval2016-Task3-CQA-QL-test.xml',
-		'./../../data/training_data/SemEval2016-Task3-CQA-QL-train-part1.xml',
-		'./../../data/training_data/SemEval2016-Task3-CQA-QL-train-part2.xml'
+		'./semeval/training_data/SemEval2015-Task3-CQA-QL-dev-reformatted-excluding-2016-questions-cleansed.xml',
+		'./semeval/training_data/SemEval2016-Task3-CQA-QL-dev.xml',
 		]
 	parser(data,sys.argv[1],sys.argv[2])
 if(__name__ == '__main__'):

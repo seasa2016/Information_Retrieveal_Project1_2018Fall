@@ -11,7 +11,8 @@ import torch
 import pandas as pd
 import sys
 
-from data import parser
+#from data import parser
+import parser
 
 import re
 import string
@@ -19,11 +20,16 @@ import json
 
 #add sos bos
 class itemDataset(Dataset):
-	def __init__(self, file_name,vocab,transform=None):
+	def __init__(self, file_name,vocab,cate,transform=None):
 		self.data = []
 		
 		#first build the vocab
-		self.build_dict(vocab)
+		self.vocab = {}
+		self.build_dict(self.vocab,vocab)
+		
+		self.cate = {}
+		self.build_dict(self.cate,cate)
+		
 
 		self.add_data(file_name,'taskA')
 		self.add_data(file_name,'taskB')
@@ -32,12 +38,11 @@ class itemDataset(Dataset):
 		
 		self.total_len = 0
 
-	def build_dict(self,vocab):
-		self.vocab = {}
+	def build_dict(self,data,vocab):
 		with open(vocab) as f:
 			for line in f:
-				line = line.strip().split()[0]
-				self.vocab[line] = len(self.vocab)+1
+				line = line.strip().split()
+				data[' '.join(line[:-1])] = len(data)+1
 
 	def add_data(self,file_name,task='taskA'):
 		def replace(line):
@@ -61,12 +66,28 @@ class itemDataset(Dataset):
 		dataloader = parser.parser(file_name,task)
 		with open(task,'w') as f:
 			json.dump(dataloader.data,f,indent=4)
-
-		for data in dataloader.iterator():
+		
+		cc = 0
+		for i,data in enumerate(dataloader.iterator()):
 			temp = {}
 		
+
 			temp['query'] = remove(data['Subject']) + remove(data['Body'])
 			temp['query_len'] = len(temp['query'])
+
+			try:
+				temp['query_type'] = np.zeros(len(self.cate))
+				for name in data['CATEGORY'].split(','):
+					temp['query_type'][self.cate[name]] += 1
+				idx = temp['query_type'][self.cate[name]].argmax()
+				temp['query_type'] = np.zeros(len(self.cate))
+				temp['query_type'][idx] = 1
+			except KeyError:
+				temp['query_type'][0] = 1
+
+
+
+
 			if(temp['query_len']==0):
 				continue
 			
@@ -159,7 +180,7 @@ class ToTensor(object):
 		for name in ['query','left','right','query_len','left_len','right_len']:
 			sample[name] = torch.tensor(sample[name],dtype=torch.long)
 			
-		for name in ['left_type','right_type','total_type']:
+		for name in ['left_type','right_type','total_type','query_type']:
 			sample[name] = torch.tensor(sample[name],dtype=torch.float)
 			
 		return sample
@@ -173,11 +194,11 @@ def collate_fn(data):
 	"""
 	output = dict()
 
-	for name in ['query_len','left_len','right_len','left_type','right_type','total_type']:
+	for name in ['query_len','left_len','right_len','left_type','right_type','total_type','query_type']:
 		temp = [ _[name] for _ in data]	 
 		output[name] = torch.stack(temp, dim=0) 
 	
-	for name in ['left_type','right_type','total_type']:
+	for name in ['left_type','right_type','total_type','query_type']:
 		output[name] = output[name].view(-1,1)
 
 	#deal with source and target
@@ -197,7 +218,7 @@ def collate_fn(data):
 
 if(__name__ == '__main__'):
 	print('QQQ')
-	dataset = itemDataset( file_name='./semeval/training_data/SemEval2016-Task3-CQA-QL-dev.xml',vocab='./vocab',
+	dataset = itemDataset( file_name='./semeval/training_data/SemEval2016-Task3-CQA-QL-dev.xml',vocab='./vocab',cate='./cate',
 								transform=transforms.Compose([ToTensor()]))
 	
 	

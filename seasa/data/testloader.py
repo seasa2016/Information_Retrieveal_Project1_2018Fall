@@ -74,7 +74,7 @@ class itemDataset(Dataset):
 					for comment in data["Comment"]:
 						text = remove(comment["Text"])
 						
-						temp['answer_ID'] = comment["ID"]
+						temp['answer_ID'] = comment["ID"][:-5]
 						
 						temp['answer'] = text
 						temp['answer_len'] = len(text)

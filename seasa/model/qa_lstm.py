@@ -104,7 +104,7 @@ class Encoder(nn.Module):
 
 		total_output = torch.cat([query_result,answer_result],dim=-1)
 
-		return total_output
+		return total_output,query_result
 
 
 class Decoder(nn.Module):
@@ -125,12 +125,32 @@ class Decoder(nn.Module):
 		
 		return out
 
+class Detector(nn.Module):
+	def __init__(self,args):
+		super(Decoder,self).__init__()
+		self.linear1 = nn.Linear(args.hidden_dim,args.hidden_dim)
+		self.linear2 = nn.Linear(args.hidden_dim,args.cate)
+
+		self.act = nn.Relu()
+	def forward(self,x):
+		"""
+			here I will simply use two layer feedforward
+		"""
+		out = self.linear1(x)
+		out = self.act(out)
+
+		out = self.linear2(out)
+		
+		return out
+
+
 class qa_lstm(nn.Module):
 	def __init__(self,args):
 		super(qa_lstm,self).__init__()
 
 		self.encoder = Encoder(args)
 		self.decoder = Decoder(args)
+		self.detector = Detector(args)
 	
 	def forward(self):
 		"""

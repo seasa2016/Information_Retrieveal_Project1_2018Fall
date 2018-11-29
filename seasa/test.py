@@ -26,7 +26,7 @@ def get_data(batch_size,task):
 	#test_dataset = itemDataset( file_name=test_file,vocab='./datapiece/vocab_4096.model',task=task,transform=transforms.Compose([ToTensor()]))
 	test_dataset = itemDataset( file_name=test_file,vocab='./data/vocab',task=task,transform=transforms.Compose([ToTensor()]))
 
-	test_dataloader = DataLoader(test_dataset, batch_size=batch_size,shuffle=False, num_workers=16,collate_fn=collate_fn)
+	test_dataloader = DataLoader(test_dataset, batch_size=16,shuffle=False, num_workers=16,collate_fn=collate_fn)
 	
 	length = len(test_dataloader)
 	
