@@ -95,15 +95,16 @@ def train(args):
 	print(model)
 	optimizer = optim.Adam(model.parameters(),lr=args.learning_rate)
 	criterion = nn.BCEWithLogitsLoss(reduction='sum')
+	cate_criterion = nn.NLLLoss(reduction='sum')
 	
 	loss_best = 100000000
 	print("start training")
 	for now in range(args.epoch):
 		print(now)
 		
-		Loss = {'class':0,'rank':0}
+		Loss = {'class':0,'rank':0,'cate':0}
 		Count = {'class':0,'rank':0}
-		temp_Loss = {'class':0,'rank':0}
+		temp_Loss = {'class':0,'rank':0,'cate':0}
 		temp_Count = {'class':0,'rank':0}
 
 		model.train()
@@ -115,21 +116,28 @@ def train(args):
 			data = convert(data,device)
 
 			#deal with the classfication part
-			out_left = model.encoder(data['query'],data['query_len'],data['left'],data['left_len'])
+			out_left,query_left = model.encoder(data['query'],data['query_len'],data['left'],data['left_len'])
 			out_left = model.decoder(out_left)
+			query_left = model.detector(query_left)
 			pred = (out_left.sigmoid()>0.5).int()
 			
 			temp_Count['class'] += ( data['left_type'].int()==pred ).sum()
 			Count['class'] += ( data['left_type'].int()==pred ).sum()
 			
+			loss = cate_criterion(query_left,data['query_type']) 
+			loss.backward(retain_graph=True)
+			temp_Loss['cate'] += loss.detach().cpu().item()
+			Loss['cate'] += loss.detach().cpu().item()
+
 			loss = criterion(out_left,data['left_type']) 
 			loss.backward(retain_graph=True)
-			
 			temp_Loss['class'] += loss.detach().cpu().item()
 			Loss['class'] += loss.detach().cpu().item()
 
-			out_right = model.encoder(data['query'],data['query_len'],data['right'],data['right_len'])
+
+			out_right,query_right = model.encoder(data['query'],data['query_len'],data['right'],data['right_len'])
 			out_right = model.decoder(out_right)
+
 			pred = (out_right.sigmoid()>0.5).int()
 			temp_Count['class'] += ( data['right_type'].int()==pred ).sum()
 			Count['class'] += ( data['right_type'].int()==pred ).sum()
@@ -162,19 +170,20 @@ def train(args):
 			if(i%160==0):
 				#print('out',out_right.sigmoid().view(-1))
 				#print('label',data['right_type'].view(-1))
-				print(i,' training loss(class):{0} loss(rank):{1} acc:{2}/{3} {4}/{5}'.format(temp_Loss['class'],temp_Loss['rank'],temp_Count['class'],args.batch_size*320,temp_Count['rank'],args.batch_size*160))
+				print(i,' training loss(class):{0} (rank):{1} (cate):{2}  acc:{3}/{4} {5}/{6}'.format(
+					temp_Loss['class'],temp_Loss['rank'],temp_Loss['cate'],temp_Count['class'],args.batch_size*320,temp_Count['rank'],args.batch_size*160))
 
-				temp_Loss = {'class':0,'rank':0}
+				temp_Loss = {'class':0,'rank':0,'cate':0}
 				temp_Count = {'class':0,'rank':0}
 		
 		if(now%args.print_freq==0):
 			print('*'*10)
-			print('training loss(class):{0} loss(rank):{1} acc:{2}/{3} {4}/{5}'.format(
-							Loss['class']/length['train']/2,Loss['rank']/length['train'],Count['class'],length['train']*2,Count['rank'],length['train']))
+			print(' training loss(class):{0} (rank):{1} (cate):{2}  acc:{3}/{4} {5}/{6}'.format(
+							Loss['class']/length['train']/2,Loss['rank']/length['train'],Loss['cate']/length['train'],Count['class'],length['train']*2,Count['rank'],length['train']))
 		
 
 
-		Loss = {'class':0,'rank':0}
+		Loss = {'class':0,'rank':0,'cate':0}
 		Count = {'class':0,'rank':0}
 
 		model.eval()
@@ -185,14 +194,20 @@ def train(args):
 				data = convert(data,device)
 
 				#deal with the classfication part
-				out_left = model.encoder(data['query'],data['query_len'],data['left'],data['left_len'])
+				out_left,query_left = model.encoder(data['query'],data['query_len'],data['left'],data['left_len'])
 				out_left = model.decoder(out_left)
+				query_left = model.detector(out_left)
 				pred = (out_left.sigmoid()>0.5).int()
+				
+				loss = cate_criterion(query_left,data['query_type']) 
+				Loss['cate'] += loss.detach().cpu().item()
+				
 				Count['class'] += ( data['left_type'].int()==pred ).sum()
 				loss = criterion(out_left,data['left_type']) 
 				Loss['class'] += loss.detach().cpu().item()
 
-				out_right = model.encoder(data['query'],data['query_len'],data['right'],data['right_len'])
+
+				out_right,query_right = model.encoder(data['query'],data['query_len'],data['right'],data['right_len'])
 				out_right = model.decoder(out_right)
 				pred = (out_right.sigmoid()>0.5).int()
 				Count['class'] += ( data['right_type'].int()==pred ).sum()
@@ -210,8 +225,8 @@ def train(args):
 
 		if(now%args.print_freq==0):
 			print('*'*10)
-			print(i,' testing loss(class):{0} loss(rank):{1} acc:{2}/{3} {4}/{5}'.format(
-							Loss['class']/length['valid']/2,Loss['rank']/length['valid'],Count['class'],length['valid']*2,Count['rank'],length['valid']))
+			print(i,' testing loss(class):{0} (rank):{1} (cate){2} acc:{3}/{4} {5}/{6}'.format(
+							Loss['class']/length['valid']/2,Loss['rank']/length['valid'],Loss['cate']/length['valid'],Count['class'],length['valid']*2,Count['rank'],length['valid']))
 		
 		check = {
 				'args':args,
