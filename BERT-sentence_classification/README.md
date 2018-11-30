@@ -4,11 +4,15 @@ https://github.com/google-research/bert
 # Pre-trained Model
 Here we use the BERT-Base, Multilingual Cased model: 
 https://storage.googleapis.com/bert_models/2018_11_23/multi_cased_L-12_H-768_A-12.zip
-(need to download and set the corresponding directory path)
+
+
+(download and set the corresponding directory path)
 
 # Data Preprocessing
 Format: <label> <sentence_1_ID> <sentence_2_ID> <sentence_1> <sentence_2>
-(sentence_1 & sentence_2: correspond to task A~C)
+
+
+(sentence_1 & sentence_2: question/comment corresponding to task A~C)
 
 # Run Classifier
 Run with run_bert.sh
