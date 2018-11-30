@@ -19,3 +19,5 @@ Run with run_bert.sh
 Two stages:
 1. Fine-tuning model, task: sentence classification
 2. Model prediction: with trained classifier (from the previous stage)
+
+* Note: run_classifier.py  comes directly from  https://github.com/google-research/bert/blob/master/run_classifier.py
