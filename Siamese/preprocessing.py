@@ -3,7 +3,11 @@ import pandas as pd
 import numpy as np
 import Xml2df
 
-train_dir = '/home/b03901008/IR/Information_retrieval_2018/training_data/'
+# Set the directory that contains training/testing data, 
+# e.g. '.../.../Information_retrieval_2018/training_data'
+# e.g. '.../.../Information_retrieval_2018/testing_data'
+train_dir = ''
+test_dir = ''
 
 # Function - 1: remove punctuations in text, set to lower cases
 
@@ -57,7 +61,7 @@ xml_list = [train_dir+'SemEval2016-Task3-CQA-QL-test.xml']
 eval_A = df_processing_A(xml_list)
 eval_A.to_csv('task_A_dev.csv')
 # Test
-xml_list = ['/home/b03901008/IR/Information_retrieval_2018/test_data/SemEval2017-task3-English-test-input.xml']
+xml_list = [test_dir+'SemEval2017-task3-English-test-input.xml']
 eval_A = df_processing_A(xml_list)
 eval_A.to_csv('task_A_2017.csv')
 
@@ -99,7 +103,7 @@ xml_list = [train_dir+'SemEval2016-Task3-CQA-QL-test.xml']
 eval_B = df_processing_B(xml_list)
 eval_B.to_csv('task_B_dev.csv')
 # Test
-xml_list = ['/home/b03901008/IR/Information_retrieval_2018/test_data/SemEval2017-task3-English-test-input.xml']
+xml_list = [test_dir+'SemEval2017-task3-English-test-input.xml']
 eval_B = df_processing_B(xml_list)
 eval_B.to_csv('task_B_2017.csv')
 
