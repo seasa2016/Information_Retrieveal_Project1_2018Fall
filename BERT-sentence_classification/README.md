@@ -9,7 +9,8 @@ https://storage.googleapis.com/bert_models/2018_11_23/multi_cased_L-12_H-768_A-1
 (download and set the corresponding directory path)
 
 # Data Preprocessing
-Format: <label> <sentence_1_ID> <sentence_2_ID> <sentence_1> <sentence_2>
+Format: 
+ <relevancy_label> <sentence_1_ID> <sentence_2_ID> <sentence_1> <sentence_2>
 
 
 (sentence_1 & sentence_2: question/comment corresponding to task A~C)
