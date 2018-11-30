@@ -88,9 +88,7 @@ del word2vec
 
 # Create embedding for left & right inputs
 max_seq_length = max(train_df[questions_cols[0]].map(lambda x: len(x)).max(),
-                     train_df[questions_cols[1]].map(lambda x: len(x)).max(),
-                     dev_df[questions_cols[0]].map(lambda x: len(x)).max(),
-                     dev_df[questions_cols[1]].map(lambda x: len(x)).max())
+                     train_df[questions_cols[1]].map(lambda x: len(x)).max())
 
 X_train = train_df[questions_cols]
 Y_train = np.array(train_df['is_relevant'])
