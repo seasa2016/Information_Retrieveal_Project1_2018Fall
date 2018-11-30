@@ -11,8 +11,8 @@ import torch
 import pandas as pd
 import sys
 
-#from data import parser
-import parser
+from data import parser
+#import parser
 
 import re
 import string
@@ -78,12 +78,11 @@ class itemDataset(Dataset):
 			try:
 				temp['query_type'] = np.zeros(len(self.cate))
 				for name in data['CATEGORY'].split(','):
-					temp['query_type'][self.cate[name]] += 1
-				idx = temp['query_type'][self.cate[name]].argmax()
-				temp['query_type'] = np.zeros(len(self.cate))
-				temp['query_type'][idx] = 1
+					temp['query_type'][self.cate[name]-1] += 1
+				idx = temp['query_type'].argmax()
+				temp['query_type'] = [idx]
 			except KeyError:
-				temp['query_type'][0] = 1
+				temp['query_type'] = [0]
 
 
 
@@ -177,10 +176,10 @@ class itemDataset(Dataset):
 
 class ToTensor(object):
 	def __call__(self,sample):
-		for name in ['query','left','right','query_len','left_len','right_len']:
+		for name in ['query','left','right','query_len','left_len','right_len','query_type']:
 			sample[name] = torch.tensor(sample[name],dtype=torch.long)
 			
-		for name in ['left_type','right_type','total_type','query_type']:
+		for name in ['left_type','right_type','total_type']:
 			sample[name] = torch.tensor(sample[name],dtype=torch.float)
 			
 		return sample
@@ -198,7 +197,7 @@ def collate_fn(data):
 		temp = [ _[name] for _ in data]	 
 		output[name] = torch.stack(temp, dim=0) 
 	
-	for name in ['left_type','right_type','total_type','query_type']:
+	for name in ['left_type','right_type','total_type']:
 		output[name] = output[name].view(-1,1)
 
 	#deal with source and target

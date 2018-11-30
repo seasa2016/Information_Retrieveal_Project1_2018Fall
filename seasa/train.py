@@ -32,24 +32,18 @@ def get_data(batch_size):
 	]
 	"""
 	train_file = [
-	'./data/semeval/training_data/SemEval2015-Task3-CQA-QL-dev-reformatted-excluding-2016-questions-cleansed.xml',
-	'./data/semeval/training_data/SemEval2015-Task3-CQA-QL-test-reformatted-excluding-2016-questions-cleansed.xml',
-	'./data/semeval/training_data/SemEval2015-Task3-CQA-QL-train-reformatted-excluding-2016-questions-cleansed.xml',
 	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-dev.xml',
-	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-test.xml',
-	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-train-part1.xml',
-	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-train-part2.xml'
 	]
 	test_file = [
 		'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-test.xml'
 	]
 
 	#train_dataset = itemDataset( file_name=train_file,vocab='./datapiece/vocab_4096.model',transform=transforms.Compose([ToTensor()]))
-	train_dataset = itemDataset( file_name=train_file,vocab='./data/vocab',transform=transforms.Compose([ToTensor()]))
+	train_dataset = itemDataset( file_name=train_file,vocab='./data/vocab',cate='./data/cate',transform=transforms.Compose([ToTensor()]))
 	train_dataloader = DataLoader(train_dataset, batch_size=batch_size,shuffle=True, num_workers=16,collate_fn=collate_fn)
 
 	#valid_dataset = itemDataset( file_name=test_file,vocab='./datapiece/vocab_4096.model',transform=transforms.Compose([ToTensor()]))
-	valid_dataset = itemDataset( file_name=test_file,vocab='./data/vocab',transform=transforms.Compose([ToTensor()]))
+	valid_dataset = itemDataset( file_name=test_file,vocab='./data/vocab',cate='./data/cate',transform=transforms.Compose([ToTensor()]))
 	valid_dataloader = DataLoader(valid_dataset, batch_size=batch_size,shuffle=False, num_workers=16,collate_fn=collate_fn)
     
 	dataloader = {}
@@ -95,7 +89,7 @@ def train(args):
 	print(model)
 	optimizer = optim.Adam(model.parameters(),lr=args.learning_rate)
 	criterion = nn.BCEWithLogitsLoss(reduction='sum')
-	cate_criterion = nn.NLLLoss(reduction='sum')
+	cate_criterion = nn.CrossEntropyLoss(reduction='sum')
 	
 	loss_best = 100000000
 	print("start training")
@@ -103,9 +97,9 @@ def train(args):
 		print(now)
 		
 		Loss = {'class':0,'rank':0,'cate':0}
-		Count = {'class':0,'rank':0}
+		Count = {'class':0,'rank':0,'cate':0}
 		temp_Loss = {'class':0,'rank':0,'cate':0}
-		temp_Count = {'class':0,'rank':0}
+		temp_Count = {'class':0,'rank':0,'cate':0}
 
 		model.train()
 		model.zero_grad()
@@ -123,11 +117,13 @@ def train(args):
 			
 			temp_Count['class'] += ( data['left_type'].int()==pred ).sum()
 			Count['class'] += ( data['left_type'].int()==pred ).sum()
-			
-			loss = cate_criterion(query_left,data['query_type']) 
+
+			loss = cate_criterion(query_left,data['query_type'].view(-1)) 
 			loss.backward(retain_graph=True)
 			temp_Loss['cate'] += loss.detach().cpu().item()
 			Loss['cate'] += loss.detach().cpu().item()
+			Count['cate'] += (query_left.topk(1)[1] == data['query_type']).sum()
+			temp_Count['cate'] += (query_left.topk(1)[1] == data['query_type']).sum()
 
 			loss = criterion(out_left,data['left_type']) 
 			loss.backward(retain_graph=True)
@@ -170,21 +166,20 @@ def train(args):
 			if(i%160==0):
 				#print('out',out_right.sigmoid().view(-1))
 				#print('label',data['right_type'].view(-1))
-				print(i,' training loss(class):{0} (rank):{1} (cate):{2}  acc:{3}/{4} {5}/{6}'.format(
-					temp_Loss['class'],temp_Loss['rank'],temp_Loss['cate'],temp_Count['class'],args.batch_size*320,temp_Count['rank'],args.batch_size*160))
+				print(i,' training loss(class):{0} (rank):{1} (cate):{2}  acc:{3}/{4} {5}/{6} {7}/{8}'.format(
+					temp_Loss['class'],temp_Loss['rank'],temp_Loss['cate'],temp_Count['class'],args.batch_size*320,temp_Count['rank'],args.batch_size*160,temp_Count['cate'],args.batch_size*160))
 
 				temp_Loss = {'class':0,'rank':0,'cate':0}
-				temp_Count = {'class':0,'rank':0}
+				temp_Count = {'class':0,'rank':0,'cate':0}
 		
 		if(now%args.print_freq==0):
 			print('*'*10)
-			print(' training loss(class):{0} (rank):{1} (cate):{2}  acc:{3}/{4} {5}/{6}'.format(
-							Loss['class']/length['train']/2,Loss['rank']/length['train'],Loss['cate']/length['train'],Count['class'],length['train']*2,Count['rank'],length['train']))
+			print(' training loss(class):{0} (rank):{1} (cate):{2}  acc:{3}/{4} {5}/{6} {7}/{8}'.format(Loss['class']/length['train']/2,Loss['rank']/length['train'],Loss['cate']/length['train'],Count['class'],length['train']*2,Count['rank'],length['train'],Count['cate'],length['train']))
 		
 
 
 		Loss = {'class':0,'rank':0,'cate':0}
-		Count = {'class':0,'rank':0}
+		Count = {'class':0,'rank':0,'cate':0}
 
 		model.eval()
 		for i,data in enumerate(dataloader['valid']):
@@ -196,8 +191,10 @@ def train(args):
 				#deal with the classfication part
 				out_left,query_left = model.encoder(data['query'],data['query_len'],data['left'],data['left_len'])
 				out_left = model.decoder(out_left)
-				query_left = model.detector(out_left)
+				query_left = model.detector(query_left)
 				pred = (out_left.sigmoid()>0.5).int()
+				Count['cate'] += (query_left.topk(1)[1] == data['query_type']).sum()
+				temp_Count['cate'] += (query_left.topk(1)[1] == data['query_type']).sum()
 				
 				loss = cate_criterion(query_left,data['query_type']) 
 				Loss['cate'] += loss.detach().cpu().item()
@@ -241,7 +238,7 @@ def train(args):
 def main():
 	parser = argparse.ArgumentParser()
 
-	parser.add_argument('--batch_size', default=256, type=int)
+	parser.add_argument('--batch_size', default=512, type=int)
 	parser.add_argument('--dropout', default=0, type=float)
 	parser.add_argument('--epoch', default=200, type=int)
 	parser.add_argument('--gpu', default=0, type=int)
@@ -267,6 +264,7 @@ def main():
 	setattr(args,'batch_first',True)
 	setattr(args,'use_char_emb',False)
 	setattr(args, 'class_size',1)
+	setattr(args, 'cate',32)
 
 	if not os.path.exists('saved_models'):
 		os.makedirs('saved_models')

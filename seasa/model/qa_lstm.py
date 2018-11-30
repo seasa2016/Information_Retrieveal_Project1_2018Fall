@@ -128,10 +128,10 @@ class Decoder(nn.Module):
 class Detector(nn.Module):
 	def __init__(self,args):
 		super(Detector,self).__init__()
-		self.linear1 = nn.Linear(args.hidden_dim,args.hidden_dim)
+		self.linear1 = nn.Linear(args.hidden_dim*2,args.hidden_dim)
 		self.linear2 = nn.Linear(args.hidden_dim,args.cate)
 
-		self.act = F.relu()
+		self.act =  nn.ReLU()
 	def forward(self,x):
 		"""
 			here I will simply use two layer feedforward
