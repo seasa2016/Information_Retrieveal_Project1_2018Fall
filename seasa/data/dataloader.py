@@ -31,7 +31,7 @@ class itemDataset(Dataset):
 		self.build_dict(self.cate,cate)
 		
 
-		self.add_data(file_name,'taskA')
+		#self.add_data(file_name,'taskA')
 		self.add_data(file_name,'taskB')
 
 		self.transform = transform

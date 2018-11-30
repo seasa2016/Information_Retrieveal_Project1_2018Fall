@@ -2,8 +2,8 @@ from time import gmtime, strftime
 import os
 import argparse
 
-#from datapiece.testloader import itemDataset,collate_fn,ToTensor
-from data.testloader import itemDataset,collate_fn,ToTensor
+from datapiece.testloader import itemDataset,collate_fn,ToTensor
+#from data.testloader import itemDataset,collate_fn,ToTensor
 
 from torch.utils.data import Dataset,DataLoader
 from torchvision import transforms, utils
@@ -23,10 +23,10 @@ def get_data(batch_size,task):
 		'./data/semeval/test_data/SemEval2017-task3-English-test-input.xml'
 	]
 
-	#test_dataset = itemDataset( file_name=test_file,vocab='./datapiece/vocab_4096.model',task=task,transform=transforms.Compose([ToTensor()]))
-	test_dataset = itemDataset( file_name=test_file,vocab='./data/vocab',task=task,transform=transforms.Compose([ToTensor()]))
+	test_dataset = itemDataset( file_name=test_file,vocab='./datapiece/vocab_4096.model',task=task,transform=transforms.Compose([ToTensor()]))
+	#test_dataset = itemDataset( file_name=test_file,vocab='./data/vocab',task=task,transform=transforms.Compose([ToTensor()]))
 
-	test_dataloader = DataLoader(test_dataset, batch_size=16,shuffle=False, num_workers=16,collate_fn=collate_fn)
+	test_dataloader = DataLoader(test_dataset, batch_size=256,shuffle=False, num_workers=16,collate_fn=collate_fn)
 	
 	length = len(test_dataloader)
 	
@@ -78,7 +78,7 @@ def test(args,model_para):
 				data = convert(data,device)
 
 				#deal with the classfication part
-				out_left = model.encoder(data['query'],data['query_len'],data['answer'],data['answer_len'])
+				out_left,_ = model.encoder(data['query'],data['query_len'],data['answer'],data['answer_len'])
 				out_left = model.decoder(out_left).detach().cpu()
 				ans = (out_left.sigmoid()>0.5).detach().cpu()
 				

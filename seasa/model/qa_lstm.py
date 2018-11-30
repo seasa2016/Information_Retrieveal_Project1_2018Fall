@@ -150,7 +150,7 @@ class qa_lstm(nn.Module):
 
 		self.encoder = Encoder(args)
 		self.decoder = Decoder(args)
-		self.detector = Detector(args)
+		#self.detector = Detector(args)
 	
 	def forward(self):
 		"""

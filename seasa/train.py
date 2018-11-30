@@ -32,7 +32,13 @@ def get_data(batch_size):
 	]
 	"""
 	train_file = [
+	'./data/semeval/training_data/SemEval2015-Task3-CQA-QL-dev-reformatted-excluding-2016-questions-cleansed.xml',
+	'./data/semeval/training_data/SemEval2015-Task3-CQA-QL-test-reformatted-excluding-2016-questions-cleansed.xml',
+	'./data/semeval/training_data/SemEval2015-Task3-CQA-QL-train-reformatted-excluding-2016-questions-cleansed.xml',
 	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-dev.xml',
+	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-test.xml',
+	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-train-part1.xml',
+	'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-train-part2.xml'
 	]
 	test_file = [
 		'./data/semeval/training_data/SemEval2016-Task3-CQA-QL-test.xml'
@@ -159,7 +165,7 @@ def train(args):
 
 			loss.backward(retain_graph=True)
 			
-			if(i%4==0):
+			if(i%1==0):
 				optimizer.step()
 				model.zero_grad()
 
@@ -196,7 +202,7 @@ def train(args):
 				Count['cate'] += (query_left.topk(1)[1] == data['query_type']).sum()
 				temp_Count['cate'] += (query_left.topk(1)[1] == data['query_type']).sum()
 				
-				loss = cate_criterion(query_left,data['query_type']) 
+				loss = cate_criterion(query_left,data['query_type'].view(-1)) 
 				Loss['cate'] += loss.detach().cpu().item()
 				
 				Count['class'] += ( data['left_type'].int()==pred ).sum()
